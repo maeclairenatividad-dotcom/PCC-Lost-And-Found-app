@@ -15,7 +15,9 @@ const { run, q } = require('./db');
 
 const MAIL_KEYS = [
   'mail_enabled', 'mail_host', 'mail_port', 'mail_secure',
-  'mail_user', 'mail_pass', 'mail_from', 'admin_alert_email', 'base_url'
+  'mail_user', 'mail_pass', 'mail_from', 'admin_alert_email', 'base_url',
+  // Wording of the "come and collect it" email sent when a claim is approved.
+  'pickup_location', 'pickup_hours'
 ];
 
 function envDefaults() {
@@ -28,7 +30,9 @@ function envDefaults() {
     mail_pass: process.env.MAIL_PASS || '',
     mail_from: process.env.MAIL_FROM || '',
     admin_alert_email: process.env.ADMIN_ALERT_EMAIL || '',
-    base_url: process.env.BASE_URL || ''
+    base_url: process.env.BASE_URL || '',
+    pickup_location: process.env.PICKUP_LOCATION || '',
+    pickup_hours: process.env.PICKUP_HOURS || ''
   };
 }
 
@@ -39,7 +43,7 @@ async function readSettings() {
   const now = Date.now();
   if (_settingsCache && now - _settingsCacheAt < 3000) return _settingsCache;
   try {
-    const rows = await q("SELECT key, value FROM settings WHERE key LIKE 'mail_%' OR key IN ('admin_alert_email','base_url')");
+    const rows = await q("SELECT key, value FROM settings WHERE key LIKE 'mail_%' OR key LIKE 'pickup_%' OR key IN ('admin_alert_email','base_url')");
     const map = {};
     rows.forEach((r) => { map[r.key] = r.value; });
     _settingsCache = map;
@@ -155,15 +159,51 @@ const templates = {
       <p><a href="${base}/admin/claims/${d.claimId}">Open the claim</a></p>`)
   }),
 
-  claimApproved: (d) => ({
-    subject: `Claim approved — collect ${d.itemRef}`,
-    html: wrap('Your claim was approved', `
-      <p>Your claim on <strong>${d.title}</strong> was approved.</p>
-      <p>Collect it at the property office during office hours. Bring your
-      <strong>student ID</strong> and show this email or reference
-      <strong>${d.itemRef}</strong>.</p>
-      ${d.note ? `<p><em>Note from staff:</em> ${d.note}</p>` : ''}`)
-  }),
+  /**
+   * Sent the moment staff approve a claim. This is the "your item is ready to
+   * claim at the drop-off" message: where to go, when it is open, what to bring
+   * and which reference to quote. Location and hours are editable from
+   * Admin → Notifications so the office can change them without a redeploy.
+   */
+  claimApproved: (d) => {
+    const where = d.location || 'Property Office drop-off counter, Student Affairs (ground floor)';
+    const when = d.hours || 'Monday to Friday, 8:00 AM – 5:00 PM';
+
+    const contact = d.officeEmail
+      ? `<p style="font-size:13px;color:#6a7278">Can't make it during these hours?
+         Email <a href="mailto:${d.officeEmail}">${d.officeEmail}</a> to arrange another time.</p>`
+      : '';
+
+    return {
+      subject: `Ready to claim — ${d.itemRef}`,
+      html: wrap('Your item is ready to claim', `
+        <p>Good news: your claim on <strong>${d.title}</strong> was approved, and the
+        item is now held for you at the drop-off.</p>
+
+        <table role="presentation" style="border-collapse:collapse;margin:16px 0">
+          <tr>
+            <td style="padding:4px 12px 4px 0;font-weight:700;vertical-align:top">Where</td>
+            <td style="padding:4px 0">${where}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 12px 4px 0;font-weight:700;vertical-align:top">When</td>
+            <td style="padding:4px 0">${when}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 12px 4px 0;font-weight:700;vertical-align:top">Bring</td>
+            <td style="padding:4px 0">Your <strong>student ID</strong>, and quote
+              <strong>${d.itemRef}</strong></td>
+          </tr>
+        </table>
+
+        <p>Staff will check your ID against the claim before releasing the item, so
+        please collect it yourself. Claim reference: <strong>${d.claimRef}</strong>.</p>
+
+        ${d.note ? `<p><em>Note from staff:</em> ${d.note}</p>` : ''}
+        <p>If someone else tries to collect it on your behalf, message the office first.</p>
+        ${contact}`)
+    };
+  },
 
   claimRejected: (d) => ({
     subject: `Claim not approved — ${d.claimRef}`,

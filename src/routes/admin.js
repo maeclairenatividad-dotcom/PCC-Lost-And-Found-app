@@ -297,8 +297,18 @@ router.post('/claims/:id/approve', async (req, res, next) => {
     }
 
     await logActivity(req.session.user.id, 'claim_approved', 'claim', claim.id, claim.ref_code);
+
+    // Tell the claimant it is ready to collect, with the pickup details the
+    // office configured in Admin → Notifications.
+    const mailCfg = await getMailConfig();
     await notify(claim.email, 'claimApproved', {
-      title: claim.title, itemRef: claim.item_ref, note
+      title: claim.title,
+      itemRef: claim.item_ref,
+      claimRef: claim.ref_code,
+      note,
+      location: mailCfg.pickup_location,
+      hours: mailCfg.pickup_hours,
+      officeEmail: mailCfg.admin_alert_email
     });
 
     // Tell the finder their good deed landed.
@@ -309,7 +319,7 @@ router.post('/claims/:id/approve', async (req, res, next) => {
       itemRef: claim.item_ref, title: claim.title
     });
 
-    req.flash('success', `${claim.ref_code} approved. ${claim.full_name} was emailed to collect it.`);
+    req.flash('success', `${claim.ref_code} approved. ${claim.full_name} was emailed the collection details.`);
     res.redirect('/admin/claims');
   } catch (err) { next(err); }
 });
@@ -439,7 +449,9 @@ router.post('/emails/settings', async (req, res, next) => {
       mail_user: String(body.mail_user || '').trim(),
       mail_from: String(body.mail_from || '').trim(),
       admin_alert_email: String(body.admin_alert_email || '').trim(),
-      base_url: String(body.base_url || '').trim().replace(/\/$/, '')
+      base_url: String(body.base_url || '').trim().replace(/\/$/, ''),
+      pickup_location: String(body.pickup_location || '').trim(),
+      pickup_hours: String(body.pickup_hours || '').trim()
     };
     // Blank password = keep the saved one.
     if (String(body.mail_pass || '').trim()) input.mail_pass = String(body.mail_pass).trim();

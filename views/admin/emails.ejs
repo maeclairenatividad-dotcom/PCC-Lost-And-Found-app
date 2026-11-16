@@ -104,6 +104,26 @@
       <p class="hint">Used for links inside emails. No trailing slash. Required once deployed.</p>
     </div>
 
+    <p class="small muted" style="margin:1.3rem 0 .5rem">
+      <strong style="color:var(--ink)">Claim collection details</strong> — used in the
+      “ready to claim” email sent to a student the moment you approve their claim.
+      Leave both blank to use the built-in defaults.
+    </p>
+    <div class="row">
+      <div class="field">
+        <label for="pickup_location">Where to collect</label>
+        <input type="text" id="pickup_location" name="pickup_location"
+               placeholder="Property Office drop-off counter, Student Affairs (ground floor)"
+               value="<%= mailConfig.pickup_location || '' %>">
+      </div>
+      <div class="field">
+        <label for="pickup_hours">Office hours</label>
+        <input type="text" id="pickup_hours" name="pickup_hours"
+               placeholder="Monday to Friday, 8:00 AM – 5:00 PM"
+               value="<%= mailConfig.pickup_hours || '' %>">
+      </div>
+    </div>
+
     <div class="row">
       <label class="check">
         <input type="checkbox" name="mail_enabled" <%= mailEnabled ? 'checked' : '' %>>
