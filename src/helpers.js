@@ -69,6 +69,11 @@ function wallDate(value) {
   return Number.isNaN(ms) ? null : new Date(ms);
 }
 
+/** "Now" as a pseudo-UTC Date on the school's wall clock. */
+function wallNow() {
+  return new Date(nowWallMs());
+}
+
 function fmtDate(d) {
   const x = wallDate(d);
   if (!x) return '—';
@@ -137,5 +142,5 @@ function sectionsFor() {
 
 module.exports = {
   STATUS, statusLabel, statusTone, fmtDate, fmtDateTime, timeAgo, dtLocalValue, daysLeft,
-  PROGRAMS, sectionsFor
+  wallDate, wallNow, PROGRAMS, sectionsFor
 };

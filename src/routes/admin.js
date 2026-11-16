@@ -5,6 +5,7 @@ const {
   notify, isMailEnabled, getMailConfig, saveMailConfig, sendTestEmail
 } = require('../mailer');
 const { alertPossibleOwners, resolveLostReports, reconcileLostReports } = require('../matching');
+const { wallDate, wallNow } = require('../helpers');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -65,24 +66,33 @@ router.get('/', async (req, res, next) => {
       FROM activity_log a LEFT JOIN users u ON u.id = a.actor_id
       ORDER BY a.created_at DESC LIMIT 12`);
 
-    // Returns per month, last 6 months, for the dashboard bar strip.
-    // Grouped in JS so the query stays portable between SQLite and Postgres.
+    // Returns per month, last 6 months, for the dashboard bar strip. Built in
+    // JS so the query stays portable between SQLite and Postgres. Every month
+    // is emitted even when it has zero returns, otherwise sparse data renders
+    // as one lopsided bar instead of a six-month strip.
     const trendRows = await q(`
       SELECT released_at
       FROM items
       WHERE status='returned' AND released_at >= datetime('now','localtime','-6 months')
       ORDER BY released_at`);
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const counts = new Map();
-    for (const row of trendRows) {
-      const d = new Date(row.released_at);
-      if (Number.isNaN(d.getTime())) continue;
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      counts.set(ym, (counts.get(ym) || 0) + 1);
+    const now = wallNow();
+    const trend = [];
+    const byMonth = new Map();
+    for (let back = 5; back >= 0; back--) {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, 1));
+      const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      const bucket = { ym, month: d.getUTCMonth() + 1, n: 0, label: MONTHS[d.getUTCMonth()] };
+      trend.push(bucket);
+      byMonth.set(ym, bucket);
     }
-    const trend = [...counts.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([ym, n]) => ({ ym, month: Number(ym.slice(5)), n, label: MONTHS[Number(ym.slice(5)) - 1] }));
+    for (const row of trendRows) {
+      const d = wallDate(row.released_at);
+      if (!d) continue;
+      const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      const bucket = byMonth.get(ym);
+      if (bucket) bucket.n++;
+    }
 
     res.render('admin/dashboard', {
       title: 'Property office', stats, queue, dropoffs, stale, activity, trend, windowDays
