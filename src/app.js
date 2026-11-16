@@ -53,6 +53,14 @@ app.use((req, res, next) => {
   res.locals.success = req.flash('success');
   res.locals.error = req.flash('error');
   res.locals.path = req.path;
+
+  // Absolute URLs for the link preview tags (Open Graph / Twitter). Set
+  // BASE_URL on the host; locally it falls back to the request's own host.
+  const siteUrl = String(process.env.BASE_URL || `${req.protocol}://${req.get('host')}`)
+    .replace(/\/+$/, '');
+  res.locals.siteUrl = siteUrl;
+  res.locals.pageUrl = siteUrl + req.originalUrl.split('?')[0];
+
   Object.assign(res.locals, helpers);
   next();
 });
