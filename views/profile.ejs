@@ -5,7 +5,8 @@
   <div>
     <h1>Your profile</h1>
     <p>
-      <% if (currentUser.avatar) { %><img class="avatar avatar-lg" src="<%= currentUser.avatar %>" alt=""><% } %>
+      <% if (currentUser.avatar) { %><img class="avatar avatar-lg" src="<%= currentUser.avatar %>" alt=""
+           onerror="this.onerror=null;this.src='/img/avatar-placeholder.svg'"><% } %>
       <%= user.role === 'student'
             ? [user.program, user.section].filter(Boolean).join(' · ') || 'Student'
             : 'Property office staff' %>
@@ -45,7 +46,8 @@
         <label class="avatar-legend" for="photoSelfie">Profile photo <span class="muted">(optional)</span></label>
         <label class="avatar-picker" data-selfie>
           <img id="photoPreview" class="avatar-preview" src="<%= user.avatar_path || '' %>"
-               alt="Your photo" <%= user.avatar_path ? '' : 'hidden' %>>
+               alt="Your photo" <%= user.avatar_path ? '' : 'hidden' %>
+               onerror="this.onerror=null;this.hidden=true;var e=document.getElementById('avatarEmpty');if(e){e.style.display='flex';}">
           <span class="avatar-empty" id="avatarEmpty">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             <span>Your photo</span>

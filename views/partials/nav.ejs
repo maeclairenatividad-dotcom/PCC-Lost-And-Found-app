@@ -38,7 +38,8 @@
 
     <div class="sidebar-foot">
       <a href="/profile" class="who-block who-link <%= path === '/profile' ? 'on' : '' %>" title="Edit your profile">
-        <% if (currentUser.avatar) { %><img class="avatar" src="<%= currentUser.avatar %>" alt=""><% } %>
+        <% if (currentUser.avatar) { %><img class="avatar" src="<%= currentUser.avatar %>" alt=""
+             onerror="this.onerror=null;this.src='/img/avatar-placeholder.svg'"><% } %>
         <div>
           <span class="who"><%= currentUser.name %></span>
           <span class="role"><%= currentUser.studentNo || 'Staff' %> · Edit profile</span>
