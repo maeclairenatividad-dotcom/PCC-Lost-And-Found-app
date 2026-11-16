@@ -61,6 +61,11 @@ Notes:
   database and override the corresponding `MAIL_*` env vars.
 - Neon requires SSL. `db.js` turns SSL on automatically for any non-localhost
   host or when `PGSSL=true`, so the connection string works as pasted.
+- **On Render's free tier, outbound SMTP to ports 25, 465 and 587 is blocked.**
+  Use port **2525** (Brevo: `smtp-relay.brevo.com:2525`, SendGrid/Mailgun/Mailjet
+  also accept it), tick nothing for SSL, or upgrade the instance. The
+  **Provider quick setup** dropdown in Admin → Notifications fills the host,
+  port and SSL flag for you.
 
 ---
 

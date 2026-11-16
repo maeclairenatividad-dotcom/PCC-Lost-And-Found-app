@@ -161,6 +161,12 @@ Gmail is free for a capstone: turn on 2-Step Verification, then create a
 caps free sending at roughly 500 messages a day. Brevo/Mailjet/SendGrid work the
 same way with their own host and credentials.
 
+**Hosting gotcha:** Render's free web services block outbound SMTP on ports
+**25, 465 and 587** (since Sept 2025), so Gmail simply times out there. Use a
+provider that accepts **port 2525** — Brevo's `smtp-relay.brevo.com:2525` is the
+easiest free option — or upgrade the instance. The **Provider quick setup**
+dropdown on the Notifications page fills these values in for you.
+
 Sending never blocks a user action: if SMTP fails, the failure is recorded in
 `email_log` with the error and the student's claim still goes through.
 

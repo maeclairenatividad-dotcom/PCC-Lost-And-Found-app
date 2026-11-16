@@ -24,18 +24,47 @@
   </p>
 
   <form method="POST" action="/admin/emails/settings">
+    <div class="field">
+      <label for="mailPreset">Provider quick setup</label>
+      <select id="mailPreset">
+        <option value="">Choose a provider… (fills the fields below)</option>
+        <option value="brevo2525">Brevo — port 2525 (works on Render free)</option>
+        <option value="brevo587">Brevo — port 587 (STARTTLS)</option>
+        <option value="brevo465">Brevo — port 465 (SSL)</option>
+        <option value="mailgun">Mailgun — port 2525</option>
+        <option value="sendgrid">SendGrid — port 2525</option>
+        <option value="mailjet">Mailjet — port 2525</option>
+        <option value="gmail">Gmail — port 587 (app password)</option>
+        <option value="zoho">Zoho — port 587</option>
+      </select>
+      <p class="hint" id="mailPresetHint">Fills the host, port and SSL fields. You still paste your own username and key.</p>
+    </div>
+
+    <details class="small" style="margin:0 0 1.2rem">
+      <summary class="muted" style="cursor:pointer">How to get Brevo credentials (free — 300 emails/day)</summary>
+      <ol class="small muted" style="margin:.55rem 0 0 1.1rem; padding:0; line-height:1.6">
+        <li>Sign up at <strong>brevo.com</strong> → <strong>SMTP &amp; API</strong> → <strong>SMTP keys</strong> → create a key.
+            That key is the password; your login email is the username.</li>
+        <li>Under <strong>Senders</strong>, add the address you want to send from and click the confirmation link
+            Brevo emails you. Unverified senders are rejected.</li>
+        <li>Use port <strong>2525</strong> here. Render's free tier blocks outbound SMTP on 25, 465 and 587,
+            so 2525 is the one that actually connects.</li>
+        <li>Save, then use <strong>Send a test email</strong> below. The delivery log records the SMTP error if it fails.</li>
+      </ol>
+    </details>
+
     <div class="row">
       <div class="field">
         <label for="mail_host">SMTP host</label>
         <input type="text" id="mail_host" name="mail_host"
                placeholder="smtp.gmail.com" value="<%= mailConfig.mail_host || '' %>">
-        <p class="hint">Gmail: <code>smtp.gmail.com</code>. Brevo/Mailjet/SendGrid also work.</p>
+        <p class="hint">Gmail: <code>smtp.gmail.com</code>. Brevo: <code>smtp-relay.brevo.com</code>.</p>
       </div>
       <div class="field">
         <label for="mail_port">Port</label>
         <input type="number" id="mail_port" name="mail_port" min="1" max="65535"
                value="<%= mailConfig.mail_port || 587 %>">
-        <p class="hint">587 = STARTTLS, 465 = SSL.</p>
+        <p class="hint">587 = STARTTLS, 465 = SSL, 2525 = use this when 465/587 are blocked.</p>
       </div>
     </div>
 
@@ -142,3 +171,4 @@
 </div>
 
 <%- include('../partials/foot') %>
+<script src="/js/mail-preset.js?v=1"></script>
