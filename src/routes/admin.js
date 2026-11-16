@@ -4,7 +4,7 @@ const { q, one, run, logActivity } = require('../db');
 const {
   notify, isMailEnabled, getMailConfig, saveMailConfig, sendTestEmail
 } = require('../mailer');
-const { alertPossibleOwners } = require('../matching');
+const { alertPossibleOwners, resolveLostReports } = require('../matching');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -263,7 +263,8 @@ router.get('/claims/:id', async (req, res, next) => {
 router.post('/claims/:id/approve', async (req, res, next) => {
   try {
     const claim = await one(`
-      SELECT cl.*, i.title, i.ref_code AS item_ref, i.id AS item_id, u.email, u.full_name
+      SELECT cl.*, i.title, i.ref_code AS item_ref, i.id AS item_id, i.brand, i.color,
+             u.email, u.full_name
       FROM claims cl JOIN items i ON i.id = cl.item_id JOIN users u ON u.id = cl.claimant_id
       WHERE cl.id = ?`, [req.params.id]);
 
@@ -278,6 +279,17 @@ router.post('/claims/:id/approve', async (req, res, next) => {
       WHERE id = ?`, [note || null, req.session.user.id, claim.id]);
 
     await run("UPDATE items SET status='returned', released_at=datetime('now','localtime') WHERE id = ?", [claim.item_id]);
+
+    // The claimant now has the item, so close any of their still-open lost
+    // reports that describe it. Without this a report can say "Still looking"
+    // next to an item that was already returned.
+    const resolvedReports = await resolveLostReports(
+      { title: claim.title, brand: claim.brand, color: claim.color },
+      claim.claimant_id
+    );
+    for (const r of resolvedReports) {
+      await logActivity(req.session.user.id, 'lost_resolved', 'lost_report', r.id, r.ref_code);
+    }
 
     // Any rival pending claims are rejected with an explanation.
     const rivals = await q(`
@@ -319,7 +331,10 @@ router.post('/claims/:id/approve', async (req, res, next) => {
       itemRef: claim.item_ref, title: claim.title
     });
 
-    req.flash('success', `${claim.ref_code} approved. ${claim.full_name} was emailed the collection details.`);
+    req.flash('success', `${claim.ref_code} approved. ${claim.full_name} was emailed the collection details.`
+      + (resolvedReports.length
+        ? ` Lost report${resolvedReports.length > 1 ? 's' : ''} ${resolvedReports.map((r) => r.ref_code).join(', ')} marked as found.`
+        : ''));
     res.redirect('/admin/claims');
   } catch (err) { next(err); }
 });
@@ -375,6 +390,32 @@ router.get('/lost-reports', async (req, res, next) => {
       JOIN users u ON u.id = l.student_id
       ORDER BY CASE l.status WHEN 'open' THEN 0 WHEN 'resolved' THEN 1 WHEN 'closed' THEN 2 ELSE 3 END, l.created_at DESC LIMIT 200`);
     res.render('admin/lost-reports', { title: 'Lost reports', reports });
+  } catch (err) { next(err); }
+});
+
+/** Staff correction: mark a report found/closed, or reopen a mistaken one. */
+router.post('/lost-reports/:id/status', async (req, res, next) => {
+  try {
+    const status = String(req.body.status || '');
+    if (!['open', 'resolved', 'closed'].includes(status)) {
+      req.flash('error', 'Unknown lost-report status.');
+      return res.redirect('/admin/lost-reports');
+    }
+
+    const report = await one(
+      'SELECT id, ref_code, status FROM lost_reports WHERE id = ?', [req.params.id]);
+    if (!report) {
+      req.flash('error', 'That lost report no longer exists.');
+      return res.redirect('/admin/lost-reports');
+    }
+
+    await run('UPDATE lost_reports SET status = ? WHERE id = ?', [status, report.id]);
+    await logActivity(req.session.user.id, `lost_${status}`, 'lost_report', report.id, report.ref_code);
+
+    const label = status === 'resolved' ? 'marked as found'
+      : status === 'closed' ? 'closed' : 'reopened';
+    req.flash('success', `${report.ref_code} ${label}.`);
+    res.redirect('/admin/lost-reports');
   } catch (err) { next(err); }
 });
 

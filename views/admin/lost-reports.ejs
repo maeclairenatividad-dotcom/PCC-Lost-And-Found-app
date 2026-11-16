@@ -5,7 +5,8 @@
   <div>
     <h1>Lost reports</h1>
     <p>What students say they are missing. New arrivals are matched against open reports
-       automatically, but scan this list when something unusual comes in.</p>
+       automatically, and approving a claim marks the claimant's matching report as found.
+       Use <strong>Fix</strong> to correct anything that drifted.</p>
   </div>
 </div>
 
@@ -15,7 +16,7 @@
   <% } else { %>
     <div class="scroll">
       <table>
-        <thead><tr><th>Reference</th><th>Item</th><th>Lost at</th><th>Student</th><th>Status</th><th>Filed</th></tr></thead>
+        <thead><tr><th>Reference</th><th>Item</th><th>Lost at</th><th>Student</th><th>Status</th><th>Fix</th><th>Filed</th></tr></thead>
         <tbody>
           <% reports.forEach(function (r) { %>
             <tr>
@@ -27,6 +28,19 @@
               <td><%= r.lost_location %><br><span class="small muted"><%= fmtDate(r.lost_at) %></span></td>
               <td><%= r.student %><br><span class="small muted"><%= r.student_no %></span></td>
               <td><span class="pill <%= statusTone(r.status) %>"><%= statusLabel(r.status) %></span></td>
+              <td>
+                <form method="POST" action="/admin/lost-reports/<%= r.id %>/status" class="inline-form">
+                  <% if (r.status !== 'resolved') { %>
+                    <button class="btn small" type="submit" name="status" value="resolved">Mark found</button>
+                  <% } %>
+                  <% if (r.status !== 'closed') { %>
+                    <button class="btn ghost small" type="submit" name="status" value="closed">Close</button>
+                  <% } %>
+                  <% if (r.status !== 'open') { %>
+                    <button class="btn ghost small" type="submit" name="status" value="open">Reopen</button>
+                  <% } %>
+                </form>
+              </td>
               <td class="muted nowrap"><%= timeAgo(r.created_at) %></td>
             </tr>
           <% }); %>
