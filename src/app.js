@@ -54,10 +54,10 @@ app.use((req, res, next) => {
   res.locals.error = req.flash('error');
   res.locals.path = req.path;
 
-  // Absolute URLs for the link preview tags (Open Graph / Twitter). Set
-  // BASE_URL on the host; locally it falls back to the request's own host.
-  const siteUrl = String(process.env.BASE_URL || `${req.protocol}://${req.get('host')}`)
-    .replace(/\/+$/, '');
+  // Absolute URLs for the link preview tags (Open Graph / Twitter). Taken from
+  // the request's own host, which Render/nginx pass through untouched, so a
+  // stale BASE_URL can never break a shared link's preview.
+  const siteUrl = `${req.protocol}://${req.get('host')}`;
   res.locals.siteUrl = siteUrl;
   res.locals.pageUrl = siteUrl + req.originalUrl.split('?')[0];
 
@@ -123,6 +123,11 @@ verify()
       console.log(`\n  Lost & Found running at http://localhost:${PORT}`);
       console.log(`  Database:     ${engine}`);
       console.log(`  Email sending: ${mailOn ? 'ON (SMTP)' : 'OFF (logged to email_log)'}\n`);
+
+      // A copy-pasted example value here means email links point nowhere.
+      if (/your-app-name|your-domain|example\.com/i.test(String(process.env.BASE_URL || ''))) {
+        console.warn('  ! BASE_URL still looks like an example value — links inside emails will be wrong.');
+      }
     });
 
     // Close cleanly on Ctrl+C or a host's SIGTERM so writes are not left hanging.
