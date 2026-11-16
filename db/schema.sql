@@ -188,6 +188,19 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 
 -- ---------------------------------------------------------------------
+-- upload_files: uploaded images live in the database, not on the host's
+-- filesystem, which most free hosts wipe on every deploy/restart
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS upload_files (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  filename   TEXT NULL,
+  mime_type  TEXT NOT NULL,
+  byte_size  INTEGER NOT NULL,
+  data       BLOB NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
+-- ---------------------------------------------------------------------
 -- Seed data
 -- ---------------------------------------------------------------------
 INSERT INTO categories (name) VALUES

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const { q, one, run, logActivity, nextRefCode } = require('../db');
 const { notify } = require('../mailer');
 const { requireLogin, requireStudent, redirectIfLoggedIn } = require('../middleware/auth');
-const { upload, webPath } = require('../middleware/upload');
+const { upload, saveUpload } = require('../middleware/upload');
 const badges = require('../badges');
 const { PROGRAMS } = require('../helpers');
 
@@ -135,7 +135,7 @@ router.post('/register', redirectIfLoggedIn, upload.single('photo'), async (req,
     if (clash) return fail('An account already exists for that email or student number.');
 
     const hash = await bcrypt.hash(password, 10);
-    const avatarPath = webPath(req.file);
+    const avatarPath = await saveUpload(req.file);
     const result = await run(
       `INSERT INTO users (student_no, full_name, email, phone, program, section, avatar_path, password_hash, role)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'student')`,
@@ -195,7 +195,7 @@ router.post('/profile', requireLogin, upload.single('avatar'), async (req, res, 
       }
     }
 
-    const avatar = req.file ? webPath(req.file) : undefined;
+    const avatar = req.file ? await saveUpload(req.file) : undefined;
     await run(
       `UPDATE users SET full_name = ?, phone = ?, program = ?, section = ?,
         avatar_path = COALESCE(?, avatar_path) WHERE id = ?`,

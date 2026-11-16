@@ -46,6 +46,11 @@ if (isPostgres) {
   // compares and renders those numbers, so parse them.
   pg.types.setTypeParser(20, (v) => (v === null ? null : parseInt(v, 10)));
 
+  // TIMESTAMP WITHOUT TIME ZONE holds wall-clock time (see TIMEZONE below).
+  // Keep it as the raw string so it renders the same as SQLite; parsing it
+  // into a Date would attach the server's timezone to a naive value.
+  pg.types.setTypeParser(1114, (v) => v);
+
   const localHost = /@(localhost|127\.0\.0\.1)[:/]/i.test(DATABASE_URL);
   const wantsSSL = /sslmode=(require|verify-ca|verify-full)/i.test(DATABASE_URL)
     || String(process.env.PGSSL || '').toLowerCase() === 'true'
@@ -85,6 +90,14 @@ if (isPostgres) {
       expires_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+    CREATE TABLE IF NOT EXISTS upload_files (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      filename   TEXT NULL,
+      mime_type  TEXT NOT NULL,
+      byte_size  INTEGER NOT NULL,
+      data       BLOB NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
   `);
 }
 
@@ -251,12 +264,38 @@ async function ensureSchema() {
       )
     : await one("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'users'");
 
-  if (found) return false;
+  if (!found) {
+    const sql = fs.readFileSync(schemaFile(), 'utf8');
+    await exec(sql);
+    console.log(`[db] created a fresh ${isPostgres ? 'Postgres' : 'SQLite'} schema`);
+  }
 
-  const sql = fs.readFileSync(schemaFile(), 'utf8');
-  await exec(sql);
-  console.log(`[db] created a fresh ${isPostgres ? 'Postgres' : 'SQLite'} schema`);
-  return true;
+  // Tables added after v1 still need creating on databases that predate them.
+  if (isPostgres) {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key        TEXT PRIMARY KEY,
+        value      TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMP NOT NULL DEFAULT ${nowSql()}
+      );
+      CREATE TABLE IF NOT EXISTS sessions (
+        sid        TEXT PRIMARY KEY,
+        sess       TEXT NOT NULL,
+        expires_at BIGINT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+      CREATE TABLE IF NOT EXISTS upload_files (
+        id         SERIAL PRIMARY KEY,
+        filename   TEXT NULL,
+        mime_type  TEXT NOT NULL,
+        byte_size  INTEGER NOT NULL,
+        data       BYTEA NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT ${nowSql()}
+      );
+    `);
+  }
+
+  return !found;
 }
 
 /**

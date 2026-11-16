@@ -213,7 +213,6 @@ src/
 views/              EJS templates
 public/
   css/app.css       the whole design system
-  uploads/          user-uploaded photos (gitignored)
 ```
 
 ---

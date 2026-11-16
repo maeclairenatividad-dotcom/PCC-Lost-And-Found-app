@@ -11,10 +11,9 @@ It needs **Node.js 20 or 22 LTS** and one of two database setups:
 Both engines run the same code. The app picks Postgres when `DATABASE_URL`
 starts with `postgres://` or `postgresql://`, and SQLite otherwise.
 
-Either way you still need somewhere persistent for `public/uploads/` — photos
-and claim proof images are files on disk, not rows in the database. If the host
-gives you an **ephemeral filesystem**, mount a persistent disk at
-`public/uploads`. (External object storage such as S3 is not implemented.)
+Uploaded photos (item pictures, claim proofs, avatars) are stored in the
+`upload_files` table, so they survive redeploys even on hosts with an
+ephemeral filesystem. No disk or object storage is needed for them.
 
 ---
 
@@ -106,10 +105,8 @@ Notes:
 2. Build command: `npm ci --omit=dev`
 3. Start command: `npm start`
 4. Add the environment variables from section 1 (with a Neon `DATABASE_URL`).
-5. Add a **persistent volume/disk** for uploads only, then either mount it at
-   `public/uploads`, or set a volume path and symlink it in the start command:
-   `ln -sfn /var/data/uploads public/uploads && npm start`
-   No disk is needed for the database when you use Neon.
+5. No persistent disk is needed: photos live in the database and sessions too.
+   (Only a SQLite deployment needs a disk, for `db/app.db`.)
 6. Set the health check path to **`/healthz`**.
 7. Open the app, sign in as staff, then configure email under
    **Notifications** and press **Send test email**.

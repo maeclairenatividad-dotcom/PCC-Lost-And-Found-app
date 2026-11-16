@@ -18,16 +18,70 @@ const STATUS = {
 const statusLabel = (s) => (STATUS[s] ? STATUS[s].label : s);
 const statusTone  = (s) => (STATUS[s] ? STATUS[s].tone : 'mute');
 
+/**
+ * Timestamps in the database are wall-clock time in the school's zone (see
+ * PG_TIMEZONE), not UTC instants. Parsing them with `new Date(value)` makes
+ * the server's timezone leak in — on a UTC host a "23:00" row reads as 8 hours
+ * in the future, so timeAgo() says "just now" all evening. Everything below
+ * converts both stored values and "now" onto the same wall-clock basis.
+ */
+const TIMEZONE = process.env.PG_TIMEZONE || 'Asia/Manila';
+
+const ZONE_PARTS = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIMEZONE,
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit',
+  hourCycle: 'h23'
+});
+
+function instantToWallMs(date) {
+  const p = {};
+  for (const { type, value } of ZONE_PARTS.formatToParts(date)) {
+    if (type !== 'literal') p[type] = Number(value);
+  }
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+}
+
+/** "Now" as the same wall-clock milliseconds basis as stored values. */
+function nowWallMs() {
+  return instantToWallMs(new Date());
+}
+
+/** Milliseconds for a stored timestamp, read as wall-clock time. */
+function wallMs(value) {
+  if (value === null || value === undefined || value === '') return NaN;
+  if (value instanceof Date) return instantToWallMs(value);
+
+  const s = String(value);
+  if (/(?:z|[+-]\d{2}:?\d{2})$/i.test(s)) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? NaN : instantToWallMs(d);
+  }
+
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?/);
+  if (!m) return NaN;
+  return Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+}
+
+/** Pseudo-UTC Date carrying the wall-clock components; format it in UTC. */
+function wallDate(value) {
+  const ms = wallMs(value);
+  return Number.isNaN(ms) ? null : new Date(ms);
+}
+
 function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-PH', {
-    year: 'numeric', month: 'short', day: 'numeric'
+  const x = wallDate(d);
+  if (!x) return '—';
+  return x.toLocaleDateString('en-PH', {
+    timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric'
   });
 }
 
 function fmtDateTime(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleString('en-PH', {
+  const x = wallDate(d);
+  if (!x) return '—';
+  return x.toLocaleString('en-PH', {
+    timeZone: 'UTC',
     year: 'numeric', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit'
   });
@@ -35,8 +89,9 @@ function fmtDateTime(d) {
 
 /** "3 days ago" style, for lists where exact time is noise. */
 function timeAgo(d) {
-  if (!d) return '—';
-  const secs = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  const then = wallMs(d);
+  if (Number.isNaN(then)) return '—';
+  const secs = Math.floor((nowWallMs() - then) / 1000);
   if (secs < 60) return 'just now';
   const mins = Math.floor(secs / 60);
   if (mins < 60) return `${mins} min ago`;
@@ -49,16 +104,18 @@ function timeAgo(d) {
 
 /** Value for a datetime-local input. */
 function dtLocalValue(d) {
-  const x = d ? new Date(d) : new Date();
+  const ms = d ? wallMs(d) : nowWallMs();
+  if (Number.isNaN(ms)) return '';
+  const x = new Date(ms);
   const pad = (n) => String(n).padStart(2, '0');
-  return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}T${pad(x.getHours())}:${pad(x.getMinutes())}`;
+  return `${x.getUTCFullYear()}-${pad(x.getUTCMonth() + 1)}-${pad(x.getUTCDate())}T${pad(x.getUTCHours())}:${pad(x.getUTCMinutes())}`;
 }
 
 /** Days remaining in the claim window before an item is flagged for disposal. */
 function daysLeft(receivedAt) {
   if (!receivedAt) return null;
   const window = Number(process.env.CLAIM_WINDOW_DAYS || 90);
-  const elapsed = Math.floor((Date.now() - new Date(receivedAt).getTime()) / 86400000);
+  const elapsed = Math.floor((nowWallMs() - wallMs(receivedAt)) / 86400000);
   return window - elapsed;
 }
 

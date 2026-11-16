@@ -2,7 +2,7 @@ const express = require('express');
 const { q, one, run, nextRefCode, logActivity } = require('../db');
 const { notify } = require('../mailer');
 const { requireLogin, requireStudent } = require('../middleware/auth');
-const { upload, webPath } = require('../middleware/upload');
+const { upload, saveUpload } = require('../middleware/upload');
 const badges = require('../badges');
 
 const router = express.Router();
@@ -127,7 +127,7 @@ router.post('/found/new', requireStudent, upload.single('photo'), async (req, re
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_dropoff')`,
       [refCode, form.title, form.description, form.categoryId || null,
        form.color || null, form.brand || null, form.foundLocation,
-       new Date(form.foundAt), webPath(req.file), form.secretDetail || null,
+       new Date(form.foundAt), await saveUpload(req.file), form.secretDetail || null,
        me]);
 
     const after = badges.evaluate(await badges.statsFor(me));
@@ -204,7 +204,7 @@ router.post('/lost/new', requireStudent, upload.single('photo'), async (req, res
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [refCode, form.title, form.description, form.categoryId || null,
        form.color || null, form.brand || null, form.lostLocation,
-       new Date(form.lostAt), webPath(req.file), req.session.user.id]);
+       new Date(form.lostAt), await saveUpload(req.file), req.session.user.id]);
 
     await logActivity(req.session.user.id, 'lost_reported', 'lost_report', result.insertId, refCode);
     req.flash('success', `Report ${refCode} filed. We will email you if a match turns up.`);
@@ -312,7 +312,7 @@ router.post('/items/:id/claim', requireStudent, upload.array('proofs', 5), async
     for (let n = 0; n < req.files.length; n++) {
       await run(
         'INSERT INTO claim_proofs (claim_id, file_path, caption) VALUES (?, ?, ?)',
-        [result.insertId, webPath(req.files[n]), captions[n] || null]);
+        [result.insertId, await saveUpload(req.files[n]), captions[n] || null]);
     }
 
     // Freeze the item so nobody else claims it mid-review.

@@ -6,7 +6,7 @@ const session = require('express-session');
 const flash = require('connect-flash');
 
 const helpers = require('./helpers');
-const { verify, ensureSchema, close: closeDb, engine } = require('./db');
+const { verify, ensureSchema, one, close: closeDb, engine } = require('./db');
 const { SessionStore } = require('./session-store');
 
 const authRoutes = require('./routes/auth');
@@ -89,6 +89,22 @@ app.get('/healthz', async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: 'database unavailable' });
   }
+});
+
+// ---- Uploaded images, served straight from the database ---------------
+app.get('/files/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) return res.status(404).send('Not found');
+
+    const file = await one('SELECT mime_type, data FROM upload_files WHERE id = ?', [id]);
+    if (!file) return res.status(404).send('Not found');
+
+    res.set('Content-Type', file.mime_type);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.send(file.data);
+  } catch (err) { next(err); }
 });
 
 // ---- 404 -------------------------------------------------------------

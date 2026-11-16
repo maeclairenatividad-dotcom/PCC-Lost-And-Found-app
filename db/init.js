@@ -18,7 +18,8 @@ const { engine, isPostgres, exec, run, close } = require('../src/db');
 
 const TABLES = [
   'claim_proofs', 'claims', 'items', 'lost_reports',
-  'email_log', 'activity_log', 'settings', 'sessions', 'users', 'categories'
+  'email_log', 'activity_log', 'settings', 'sessions', 'upload_files',
+  'users', 'categories'
 ];
 
 async function main() {
