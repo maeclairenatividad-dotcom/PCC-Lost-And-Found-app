@@ -12,6 +12,7 @@ const { SessionStore } = require('./session-store');
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/student');
 const adminRoutes = require('./routes/admin');
+const { reconcileLostReports } = require('./matching');
 
 const { isMailEnabled } = require('./mailer');
 
@@ -118,6 +119,17 @@ const PORT = Number(process.env.PORT || 3000);
 verify()
   .then(() => ensureSchema())
   .then(async () => {
+    // Claims approved before this deploy left their lost reports open. Fix
+    // those rows on every boot; the admin Lost reports page also reconciles.
+    try {
+      const healed = await reconcileLostReports();
+      if (healed.length) {
+        console.log(`  Lost reports healed: ${healed.map((h) => h.ref_code).join(', ')}`);
+      }
+    } catch (err) {
+      console.error('[lost] reconcile failed:', err.message);
+    }
+
     const mailOn = await isMailEnabled();
     const server = app.listen(PORT, () => {
       console.log(`\n  Lost & Found running at http://localhost:${PORT}`);

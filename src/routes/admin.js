@@ -4,7 +4,7 @@ const { q, one, run, logActivity } = require('../db');
 const {
   notify, isMailEnabled, getMailConfig, saveMailConfig, sendTestEmail
 } = require('../mailer');
-const { alertPossibleOwners, resolveLostReports } = require('../matching');
+const { alertPossibleOwners, resolveLostReports, reconcileLostReports } = require('../matching');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -263,7 +263,7 @@ router.get('/claims/:id', async (req, res, next) => {
 router.post('/claims/:id/approve', async (req, res, next) => {
   try {
     const claim = await one(`
-      SELECT cl.*, i.title, i.ref_code AS item_ref, i.id AS item_id, i.brand, i.color,
+      SELECT cl.*, i.title, i.description, i.ref_code AS item_ref, i.id AS item_id, i.brand, i.color,
              u.email, u.full_name
       FROM claims cl JOIN items i ON i.id = cl.item_id JOIN users u ON u.id = cl.claimant_id
       WHERE cl.id = ?`, [req.params.id]);
@@ -284,7 +284,7 @@ router.post('/claims/:id/approve', async (req, res, next) => {
     // reports that describe it. Without this a report can say "Still looking"
     // next to an item that was already returned.
     const resolvedReports = await resolveLostReports(
-      { title: claim.title, brand: claim.brand, color: claim.color },
+      { title: claim.title, description: claim.description, brand: claim.brand, color: claim.color },
       claim.claimant_id
     );
     for (const r of resolvedReports) {
@@ -383,13 +383,22 @@ router.post('/claims/:id/reject', async (req, res, next) => {
 // =====================================================================
 router.get('/lost-reports', async (req, res, next) => {
   try {
+    // Heal rows that went stale before approval-time resolution (or were
+    // approved by an older deploy) so this list always reflects the claims.
+    let healed = [];
+    try {
+      healed = await reconcileLostReports();
+    } catch (err) {
+      console.error('[lost] reconcile failed:', err.message);
+    }
+
     const reports = await q(`
       SELECT l.*, c.name AS category, u.full_name AS student, u.student_no, u.email
       FROM lost_reports l
       LEFT JOIN categories c ON c.id = l.category_id
       JOIN users u ON u.id = l.student_id
       ORDER BY CASE l.status WHEN 'open' THEN 0 WHEN 'resolved' THEN 1 WHEN 'closed' THEN 2 ELSE 3 END, l.created_at DESC LIMIT 200`);
-    res.render('admin/lost-reports', { title: 'Lost reports', reports });
+    res.render('admin/lost-reports', { title: 'Lost reports', reports, healed });
   } catch (err) { next(err); }
 });
 

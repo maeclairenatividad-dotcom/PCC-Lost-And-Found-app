@@ -4,7 +4,7 @@
  * plus a category hit. Deliberately loose: a near miss costs one email, a
  * missed match costs a student their wallet.
  */
-const { q, run } = require('./db');
+const { q, run, logActivity } = require('./db');
 const { notify } = require('./mailer');
 
 async function alertPossibleOwners(item) {
@@ -94,7 +94,13 @@ function lostReportMatchesItem(report, item) {
   const brandHit =
     sharedWords(report.brand, `${item.brand || ''} ${item.title || ''}`).length > 0 ||
     sharedWords(item.brand, `${report.brand || ''} ${report.title || ''}`).length > 0;
-  return titleHit || brandHit;
+  // Descriptions are the fallback when the office listed the item under a
+  // different name than the student used ("Dildo" vs "Pink item"). A shared
+  // non-colour word there is still specific enough to act on.
+  const descriptionHit = sharedWords(
+    report.description, `${item.title || ''} ${item.description || ''}`, { descriptive: true }
+  ).length > 0;
+  return titleHit || brandHit || descriptionHit;
 }
 
 /**
@@ -104,7 +110,8 @@ function lostReportMatchesItem(report, item) {
  */
 async function resolveLostReports(item, studentId) {
   const reports = await q(
-    "SELECT id, ref_code, title, brand, color FROM lost_reports WHERE student_id = ? AND status = 'open'",
+    `SELECT id, ref_code, title, description, brand, color
+     FROM lost_reports WHERE student_id = ? AND status = 'open'`,
     [studentId]
   );
   const matches = reports.filter((r) => lostReportMatchesItem(r, item));
@@ -114,4 +121,40 @@ async function resolveLostReports(item, studentId) {
   return matches;
 }
 
-module.exports = { alertPossibleOwners, lostReportMatchesItem, resolveLostReports };
+/**
+ * Repair lost reports that drifted before approval-time resolution existed
+ * (or when a claim was approved on another instance). Any open report whose
+ * owner already had a matching claim approved is marked found. Idempotent, so
+ * it is safe to run at boot and before the admin list renders.
+ */
+async function reconcileLostReports() {
+  const reports = await q(`
+    SELECT l.id, l.ref_code, l.title, l.description, l.brand, l.color, l.student_id
+    FROM lost_reports l
+    WHERE l.status = 'open'
+      AND EXISTS (
+        SELECT 1 FROM claims cl JOIN items i ON i.id = cl.item_id
+        WHERE cl.claimant_id = l.student_id
+          AND cl.status = 'approved' AND i.status = 'returned'
+      )`);
+
+  const healed = [];
+  for (const report of reports) {
+    const items = await q(`
+      SELECT i.id, i.ref_code, i.title, i.description, i.brand, i.color
+      FROM claims cl JOIN items i ON i.id = cl.item_id
+      WHERE cl.claimant_id = ? AND cl.status = 'approved' AND i.status = 'returned'`,
+      [report.student_id]);
+
+    const hit = items.find((item) => lostReportMatchesItem(report, item));
+    if (!hit) continue;
+
+    await run("UPDATE lost_reports SET status = 'resolved' WHERE id = ?", [report.id]);
+    await logActivity(null, 'lost_resolved_auto', 'lost_report', report.id,
+      `${report.ref_code} matched ${hit.ref_code}`);
+    healed.push({ id: report.id, ref_code: report.ref_code, item_ref: hit.ref_code });
+  }
+  return healed;
+}
+
+module.exports = { alertPossibleOwners, lostReportMatchesItem, resolveLostReports, reconcileLostReports };

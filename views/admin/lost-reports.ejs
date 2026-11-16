@@ -10,6 +10,10 @@
   </div>
 </div>
 
+<% if (typeof healed !== 'undefined' && healed.length) { %>
+  <div class="flash ok"><%= healed.length %> report<%= healed.length > 1 ? 's' : '' %> marked found automatically from approved claims: <%= healed.map(function (h) { return h.ref_code; }).join(', ') %>.</div>
+<% } %>
+
 <div class="panel">
   <% if (!reports.length) { %>
     <p class="muted mb0">No reports filed yet.</p>
