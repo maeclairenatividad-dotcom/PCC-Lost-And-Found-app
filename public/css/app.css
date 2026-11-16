@@ -119,26 +119,21 @@ a:hover { color: #a3e2d7; }
   font-size: 1.05rem;
   letter-spacing: -0.02em;
   color: #fff;
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: .55rem;
   line-height: 1.25;
 }
-.brand-mark::before {
-  content: 'LF';
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 .3rem;
-  background: var(--tag);
-  color: var(--tag-deep);
-  font-size: .62rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.45);
+.brand-mark:hover { color: #fff; }
+/* Circular crop of the office logo; the PNG's corners are transparent. */
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: block;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.16), 0 3px 10px rgba(0,0,0,.35);
 }
 .brand-sub { font-size: .76rem; color: #7f9d96; }
 
@@ -846,8 +841,14 @@ tbody tr:hover { background: rgba(255,255,255,.03); }
     linear-gradient(180deg, #14574d 0%, #0c4038 100%);
   color: #fff;
   padding: 1rem 1.4rem;
-  display: flex; align-items: baseline; gap: .55rem;
+  display: flex; align-items: center; gap: .55rem;
   border-bottom: 3px solid var(--tag);
+}
+.auth-logo {
+  width: 30px; height: 30px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.2), 0 2px 6px rgba(0,0,0,.25);
 }
 .auth-brand .mark {
   font-family: var(--font-display);

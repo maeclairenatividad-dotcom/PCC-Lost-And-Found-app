@@ -1,7 +1,10 @@
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-mark">Lost &amp; Found</span>
+      <a class="brand-mark" href="<%= currentUser.role === 'admin' ? '/admin' : '/student' %>">
+        <img class="brand-logo" src="/img/logo-mark.png" alt="" width="30" height="30">
+        <span>Lost &amp; Found</span>
+      </a>
       <span class="brand-sub"><%= currentUser.role === 'admin' ? 'Property office' : 'Student portal' %></span>
     </div>
 
