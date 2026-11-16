@@ -1,0 +1,60 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Inventory</h1>
+    <p>Every item logged by students, whether or not it has reached the shelf.</p>
+  </div>
+</div>
+
+<div class="chips">
+  <% var tabs = [['all','Everything'],['pending_dropoff','Awaiting drop-off'],['in_custody','On shelf'],['on_hold','Claim in review'],['returned','Returned'],['disposed','Removed']]; %>
+  <% tabs.forEach(function (t) { %>
+    <a class="chip <%= filters.status === t[0] ? 'on' : '' %>" href="/admin/items?status=<%= t[0] %>"><%= t[1] %></a>
+  <% }); %>
+</div>
+
+<form class="filters" method="GET" action="/admin/items">
+  <input type="hidden" name="status" value="<%= filters.status %>">
+  <div class="field">
+    <label for="search">Find a record</label>
+    <input type="text" id="search" name="search" value="<%= filters.search %>"
+           placeholder="Reference, item, place or brand">
+  </div>
+  <button class="btn" type="submit">Search</button>
+  <% if (filters.search) { %><a class="btn ghost" href="/admin/items?status=<%= filters.status %>">Clear</a><% } %>
+</form>
+
+<div class="panel">
+  <% if (!items.length) { %>
+    <p class="muted mb0">No records match.</p>
+  <% } else { %>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Reference</th><th>Item</th><th>Found</th><th>Finder</th><th>Shelf</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% items.forEach(function (i) { %>
+            <tr>
+              <td><span class="tag"><%= i.ref_code %></span></td>
+              <td>
+                <strong><%= i.title %></strong>
+                <% if (i.category) { %><br><span class="small muted"><%= i.category %></span><% } %>
+                <% if (i.pending_claims) { %><br><span class="pill busy"><%= i.pending_claims %> claim(s)</span><% } %>
+              </td>
+              <td><%= i.found_location %><br><span class="small muted"><%= fmtDate(i.found_at) %></span></td>
+              <td><%= i.finder %></td>
+              <td class="muted"><%= i.storage_location || '—' %></td>
+              <td><span class="pill <%= statusTone(i.status) %>"><%= statusLabel(i.status) %></span></td>
+              <td><a class="small" href="/admin/items/<%= i.id %>">Open</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/foot') %>

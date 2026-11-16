@@ -1,0 +1,107 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Hello, <%= currentUser.name.split(' ')[0] %></h1>
+    <p>Search what is at the office, or hand in something you picked up on campus.</p>
+  </div>
+  <div class="actions" style="margin:0">
+    <a class="btn" href="/found/new">Log a found item</a>
+    <a class="btn ghost" href="/lost/new">Report a loss</a>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="n"><%= stats.available %></div><div class="k">Items at the office</div></div>
+  <div class="stat"><div class="n"><%= stats.myPending %></div><div class="k">Your claims in review</div></div>
+  <div class="stat"><div class="n"><%= stats.myLost %></div><div class="k">Your open lost reports</div></div>
+  <div class="stat"><div class="n"><%= stats.myFinds %></div><div class="k">Items you handed in</div></div>
+</div>
+
+<div class="panel" style="margin-top:1.4rem">
+  <div class="panel-head">
+    <h2>Merit badges</h2>
+    <span class="small muted"><span class="tag"><%= badges.earned %></span> of <%= badges.total %> earned</span>
+  </div>
+  <%- include('../partials/achievements') %>
+</div>
+
+<% if (todo.length) { %>
+  <div class="panel note">
+    <div class="panel-head">
+      <h2>Bring these to the office</h2>
+      <span class="small muted">Ground floor, Student Affairs</span>
+    </div>
+    <p class="small muted">You logged these but staff have not received them yet. Give the reference number at the counter.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Reference</th><th>Item</th><th>Found at</th><th>Logged</th></tr></thead>
+        <tbody>
+          <% todo.forEach(function (i) { %>
+            <tr>
+              <td><span class="tag"><%= i.ref_code %></span></td>
+              <td><%= i.title %></td>
+              <td><%= i.found_location %></td>
+              <td class="muted nowrap"><%= timeAgo(i.created_at) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<% if (myClaims.length) { %>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Your recent claims</h2>
+      <a href="/claims">See all</a>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Claim</th><th>Item</th><th>Status</th><th>Filed</th></tr></thead>
+        <tbody>
+          <% myClaims.forEach(function (c) { %>
+            <tr>
+              <td><span class="tag plain"><%= c.ref_code %></span></td>
+              <td><%= c.title %> <span class="muted small"><%= c.item_ref %></span></td>
+              <td><span class="pill <%= statusTone(c.status) %>"><%= statusLabel(c.status) %></span></td>
+              <td class="muted nowrap"><%= timeAgo(c.created_at) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<div class="panel-head" style="margin-top:1.6rem">
+  <h2>Newly turned in</h2>
+  <a href="/items">Browse everything</a>
+</div>
+
+<% if (!recent.length) { %>
+  <div class="empty">
+    <h3>Nothing at the office yet</h3>
+    <p>When students hand items in, they show up here.</p>
+  </div>
+<% } else { %>
+  <div class="grid">
+    <% recent.forEach(function (i) { %>
+      <a class="record" href="/items/<%= i.id %>">
+        <span class="tag"><%= i.ref_code %></span>
+        <div class="shot" <% if (i.photo_path) { %>style="background-image:url('<%= i.photo_path %>')"<% } %>>
+          <% if (!i.photo_path) { %>No photo<% } %>
+        </div>
+        <div class="body">
+          <div class="name"><%= i.title %></div>
+          <div class="meta"><%= i.found_location %><br><%= fmtDate(i.found_at) %></div>
+          <div class="foot"><span class="pill <%= statusTone(i.status) %>"><%= statusLabel(i.status) %></span></div>
+        </div>
+      </a>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>

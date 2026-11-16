@@ -1,0 +1,153 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<p class="small"><a href="/admin/items">← Inventory</a></p>
+
+<div class="page-head">
+  <div>
+    <span class="tag"><%= item.ref_code %></span>
+    <h1 style="margin-top:.5rem"><%= item.title %></h1>
+    <span class="pill <%= statusTone(item.status) %>"><%= statusLabel(item.status) %></span>
+  </div>
+</div>
+
+<div class="split">
+  <div>
+    <% if (item.status === 'pending_dropoff') { %>
+      <div class="panel note">
+        <h2>Confirm receipt</h2>
+        <p class="small">Do this only with the item in your hands. It goes live in the student
+           listing straight away and any matching lost reports get an email.</p>
+        <form method="POST" action="/admin/items/<%= item.id %>/receive">
+          <div class="field">
+            <label for="storageLocation">Where is it stored?</label>
+            <input type="text" id="storageLocation" name="storageLocation" required
+                   placeholder="Shelf B, bin 4">
+          </div>
+          <button class="btn" type="submit">Mark as received</button>
+        </form>
+      </div>
+    <% } %>
+
+    <% if (item.secret_detail) { %>
+      <div class="panel">
+        <h2>Hidden identifying detail</h2>
+        <p class="small muted">Recorded by the finder. Students never see this — compare it
+           against what each claimant writes.</p>
+        <div class="quote"><%= item.secret_detail %></div>
+      </div>
+    <% } %>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Claims on this item</h2>
+        <span class="small muted"><%= claims.length %> total</span>
+      </div>
+      <% if (!claims.length) { %>
+        <p class="muted mb0">Nobody has claimed this yet.</p>
+      <% } else { %>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Claim</th><th>Claimant</th><th>Proof</th><th>Status</th><th>Filed</th><th></th></tr></thead>
+            <tbody>
+              <% claims.forEach(function (c) { %>
+                <tr>
+                  <td><span class="tag plain"><%= c.ref_code %></span></td>
+                  <td><%= c.claimant %><br><span class="small muted"><%= c.student_no %></span></td>
+                  <td><%= c.proof_count %></td>
+                  <td><span class="pill <%= statusTone(c.status) %>"><%= statusLabel(c.status) %></span></td>
+                  <td class="muted nowrap"><%= fmtDate(c.created_at) %></td>
+                  <td><a class="small" href="/admin/claims/<%= c.id %>">Review</a></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="panel">
+      <h2>Edit record</h2>
+      <form method="POST" action="/admin/items/<%= item.id %>/update">
+        <div class="field">
+          <label for="title">Item</label>
+          <input type="text" id="title" name="title" required value="<%= item.title %>">
+        </div>
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" required><%= item.description %></textarea>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="categoryId">Category</label>
+            <select id="categoryId" name="categoryId">
+              <option value="">None</option>
+              <% categories.forEach(function (c) { %>
+                <option value="<%= c.id %>" <%= item.category_id === c.id ? 'selected' : '' %>><%= c.name %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="storageLocation2">Shelf location</label>
+            <input type="text" id="storageLocation2" name="storageLocation" value="<%= item.storage_location || '' %>">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="brand">Brand</label>
+            <input type="text" id="brand" name="brand" value="<%= item.brand || '' %>">
+          </div>
+          <div class="field">
+            <label for="color">Colour</label>
+            <input type="text" id="color" name="color" value="<%= item.color || '' %>">
+          </div>
+        </div>
+        <button class="btn" type="submit">Save changes</button>
+      </form>
+    </div>
+
+    <% if (item.status === 'in_custody') { %>
+      <div class="panel">
+        <h2>Remove from inventory</h2>
+        <p class="small muted">Use when the claim window has lapsed and the item is being
+           donated or discarded. Any pending claims are cancelled.</p>
+        <form method="POST" action="/admin/items/<%= item.id %>/dispose"
+              onsubmit="return confirm('Remove <%= item.ref_code %> from inventory?')">
+          <div class="field">
+            <label for="reason">Reason</label>
+            <input type="text" id="reason" name="reason" placeholder="Unclaimed after 90 days, donated">
+          </div>
+          <button class="btn danger" type="submit">Remove item</button>
+        </form>
+      </div>
+    <% } %>
+  </div>
+
+  <div>
+    <div class="panel">
+      <% if (item.photo_path) { %>
+        <img class="photo-big" src="<%= item.photo_path %>" alt="<%= item.title %>">
+      <% } else { %>
+        <p class="muted small">No photo was uploaded.</p>
+      <% } %>
+      <ul class="facts mt1">
+        <li><span class="k">Found at</span><span class="v"><%= item.found_location %></span></li>
+        <li><span class="k">Date found</span><span class="v"><%= fmtDateTime(item.found_at) %></span></li>
+        <li><span class="k">Logged</span><span class="v"><%= fmtDateTime(item.created_at) %></span></li>
+        <li><span class="k">Finder</span><span class="v"><%= item.finder %><br><span class="small muted"><%= item.finder_no || '—' %></span></span></li>
+        <li><span class="k">Finder email</span><span class="v small"><%= item.finder_email %></span></li>
+        <% if (item.received_at) { %>
+          <li><span class="k">Received</span><span class="v"><%= fmtDateTime(item.received_at) %><br><span class="small muted">by <%= item.receiver %></span></span></li>
+        <% } %>
+        <% if (item.released_at) { %>
+          <li><span class="k">Released</span><span class="v"><%= fmtDateTime(item.released_at) %></span></li>
+        <% } %>
+        <% if (item.received_at && item.status === 'in_custody') { %>
+          <li><span class="k">Claim window</span><span class="v"><%= daysLeft(item.received_at) %> days left</span></li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

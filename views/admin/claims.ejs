@@ -1,0 +1,47 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Claims</h1>
+    <p>Every decision emails the claimant automatically, so write rejection reasons as if
+       the student is reading them — because they are.</p>
+  </div>
+</div>
+
+<div class="chips">
+  <% var tabs = [['pending','Waiting'],['approved','Approved'],['rejected','Rejected'],['cancelled','Withdrawn'],['all','Everything']]; %>
+  <% tabs.forEach(function (t) { %>
+    <a class="chip <%= filters.status === t[0] ? 'on' : '' %>" href="/admin/claims?status=<%= t[0] %>"><%= t[1] %></a>
+  <% }); %>
+</div>
+
+<div class="panel">
+  <% if (!claims.length) { %>
+    <p class="muted mb0">Nothing here.</p>
+  <% } else { %>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Claim</th><th>Item</th><th>Claimant</th><th>Proof</th><th>Status</th><th>Filed</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% claims.forEach(function (c) { %>
+            <tr>
+              <td><span class="tag plain"><%= c.ref_code %></span></td>
+              <td><strong><%= c.title %></strong><br><span class="small muted"><%= c.item_ref %></span></td>
+              <td><%= c.claimant %><br><span class="small muted"><%= c.student_no %></span></td>
+              <td><%= c.proof_count %> file<%= c.proof_count === 1 ? '' : 's' %></td>
+              <td><span class="pill <%= statusTone(c.status) %>"><%= statusLabel(c.status) %></span></td>
+              <td class="muted nowrap"><%= timeAgo(c.created_at) %></td>
+              <td><a class="btn small <%= c.status === 'pending' ? '' : 'ghost' %>" href="/admin/claims/<%= c.id %>">
+                <%= c.status === 'pending' ? 'Review' : 'Open' %></a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/foot') %>

@@ -1,0 +1,144 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Notifications</h1>
+    <p>Email delivery settings and the full audit trail of every message the system produced.
+       Useful as evidence that a student was told, and for your capstone demo.</p>
+  </div>
+</div>
+
+<div class="panel note">
+  <div class="panel-head">
+    <h2 style="margin:0">Mail delivery</h2>
+    <span class="pill <%= mailEnabled ? 'good' : 'mute' %>"><%= mailEnabled ? 'Sending on' : 'Sending off' %></span>
+  </div>
+  <p class="small muted" style="margin-top:0">
+    <% if (mailEnabled) { %>
+      Real emails are being sent through <strong><%= mailConfig.mail_host || 'your SMTP host' %></strong>.
+    <% } else { %>
+      Sending is off — notifications are recorded below and printed to the server console instead.
+      Fill this in and tick <strong>Enable sending</strong> to deliver real email.
+    <% } %>
+  </p>
+
+  <form method="POST" action="/admin/emails/settings">
+    <div class="row">
+      <div class="field">
+        <label for="mail_host">SMTP host</label>
+        <input type="text" id="mail_host" name="mail_host"
+               placeholder="smtp.gmail.com" value="<%= mailConfig.mail_host || '' %>">
+        <p class="hint">Gmail: <code>smtp.gmail.com</code>. Brevo/Mailjet/SendGrid also work.</p>
+      </div>
+      <div class="field">
+        <label for="mail_port">Port</label>
+        <input type="number" id="mail_port" name="mail_port" min="1" max="65535"
+               value="<%= mailConfig.mail_port || 587 %>">
+        <p class="hint">587 = STARTTLS, 465 = SSL.</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="mail_user">SMTP username</label>
+        <input type="text" id="mail_user" name="mail_user" autocomplete="off"
+               placeholder="youraccount@gmail.com" value="<%= mailConfig.mail_user || '' %>">
+      </div>
+      <div class="field">
+        <label for="mail_pass">SMTP password / app password</label>
+        <input type="password" id="mail_pass" name="mail_pass" autocomplete="new-password"
+               placeholder="<%= mailConfig.mail_pass ? '•••••••• (saved — leave blank to keep)' : '16-character app password' %>">
+        <p class="hint">Never shown again. Leave blank to keep the saved password.</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="mail_from">From address</label>
+        <input type="text" id="mail_from" name="mail_from"
+               placeholder="Campus Lost &amp; Found &lt;youraccount@gmail.com&gt;"
+               value="<%= mailConfig.mail_from || '' %>">
+      </div>
+      <div class="field">
+        <label for="admin_alert_email">Office alert inbox</label>
+        <input type="email" id="admin_alert_email" name="admin_alert_email"
+               placeholder="lostandfound@yourschool.edu.ph" value="<%= mailConfig.admin_alert_email || '' %>">
+        <p class="hint">Where new-claim alerts are sent.</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="base_url">Public site URL</label>
+      <input type="url" id="base_url" name="base_url"
+             placeholder="https://lostandfound.yourschool.edu" value="<%= mailConfig.base_url || '' %>">
+      <p class="hint">Used for links inside emails. No trailing slash. Required once deployed.</p>
+    </div>
+
+    <div class="row">
+      <label class="check">
+        <input type="checkbox" name="mail_enabled" <%= mailEnabled ? 'checked' : '' %>>
+        <span>Enable sending</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" name="mail_secure" <%= mailConfig.mail_secure_bool ? 'checked' : '' %>>
+        <span>Use SSL (usually only for port 465)</span>
+      </label>
+    </div>
+
+    <button class="btn" type="submit">Save mail settings</button>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2 style="margin:0">Send a test email</h2>
+  </div>
+  <form method="POST" action="/admin/emails/test" class="row" style="align-items:end">
+    <div class="field" style="flex:1">
+      <label for="testTo">Send to</label>
+      <input type="email" id="testTo" name="testTo" required
+             value="<%= currentUser.email %>">
+    </div>
+    <div class="field">
+      <button class="btn ghost" type="submit">Send test</button>
+    </div>
+  </form>
+  <p class="small muted mb0" style="margin-top:.4rem">
+    The result is recorded in the log below as <code>sent</code> or <code>failed</code>,
+    with the SMTP error if it did not go through.
+  </p>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2 style="margin:0">Delivery log</h2>
+    <span class="small muted">Last 100 messages</span>
+  </div>
+  <% if (!emails.length) { %>
+    <p class="muted mb0">No emails logged yet.</p>
+  <% } else { %>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>When</th><th>To</th><th>Subject</th><th>Type</th><th>Result</th></tr></thead>
+        <tbody>
+          <% emails.forEach(function (e) { %>
+            <tr>
+              <td class="muted nowrap"><%= fmtDateTime(e.created_at) %></td>
+              <td class="small"><%= e.recipient %></td>
+              <td><%= e.subject %><% if (e.error_message) { %><br><span class="small" style="color:var(--bad)"><%= e.error_message %></span><% } %></td>
+              <td class="small muted"><%= e.template %></td>
+              <td>
+                <span class="pill <%= e.status === 'sent' ? 'good' : (e.status === 'failed' ? 'bad' : 'mute') %>">
+                  <%= e.status === 'simulated' ? 'Logged only' : (e.status === 'sent' ? 'Sent' : 'Failed') %>
+                </span>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/foot') %>

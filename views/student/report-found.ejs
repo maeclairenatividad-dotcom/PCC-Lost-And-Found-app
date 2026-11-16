@@ -1,0 +1,93 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Log a found item</h1>
+    <p>Fill this in, then bring the item to the property office. It becomes searchable
+       once staff confirm they have it in hand.</p>
+  </div>
+</div>
+
+<form method="POST" action="/found/new" enctype="multipart/form-data">
+  <div class="split">
+    <div class="panel">
+      <h2>What you found</h2>
+
+      <div class="field">
+        <label for="title">Item</label>
+        <input type="text" id="title" name="title" required maxlength="140"
+               placeholder="Black folding umbrella" value="<%= form.title || '' %>">
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" required
+                  placeholder="Describe it plainly: shape, condition, anything visible on the outside."><%= form.description || '' %></textarea>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="categoryId">Category</label>
+          <select id="categoryId" name="categoryId">
+            <option value="">Choose one</option>
+            <% categories.forEach(function (c) { %>
+              <option value="<%= c.id %>" <%= String(form.categoryId) === String(c.id) ? 'selected' : '' %>><%= c.name %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="brand">Brand <span class="muted">(if visible)</span></label>
+          <input type="text" id="brand" name="brand" value="<%= form.brand || '' %>">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="color">Main colour</label>
+        <input type="text" id="color" name="color" placeholder="Navy blue" value="<%= form.color || '' %>">
+      </div>
+
+      <div class="field mb0">
+        <label for="photo">Photo</label>
+        <p class="hint">One clear shot helps the owner recognise it. JPG, PNG or WEBP, up to 5 MB.</p>
+        <input type="file" id="photo" name="photo" accept="image/*">
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>Where and when</h2>
+        <div class="field">
+          <label for="foundLocation">Place found</label>
+          <input type="text" id="foundLocation" name="foundLocation" required
+                 placeholder="Library 2nd floor, near the printers" value="<%= form.foundLocation || '' %>">
+        </div>
+        <div class="field mb0">
+          <label for="foundAt">Date and time found</label>
+          <input type="datetime-local" id="foundAt" name="foundAt" required
+                 value="<%= form.foundAt || dtLocalValue() %>">
+        </div>
+      </div>
+
+      <div class="panel note">
+        <h2>One detail you keep back</h2>
+        <p class="small">Write down something only the real owner would know and that your
+           description above does not reveal — a lock screen photo, a name inside the flap,
+           a cracked corner. Claimants must describe it correctly.</p>
+        <div class="field mb0">
+          <label for="secretDetail">Hidden identifying detail</label>
+          <input type="text" id="secretDetail" name="secretDetail" maxlength="255"
+                 placeholder="Sticker of a cat on the inside pocket" value="<%= form.secretDetail || '' %>">
+          <p class="hint">Only property office staff can see this.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" type="submit">Log the item</button>
+        <a class="btn ghost" href="/dashboard">Cancel</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<%- include('../partials/foot') %>

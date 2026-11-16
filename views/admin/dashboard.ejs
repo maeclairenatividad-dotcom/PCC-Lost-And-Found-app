@@ -1,0 +1,147 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Property office</h1>
+    <p>Two things need you: items waiting to be received at the counter, and claims waiting
+       for a decision.</p>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat <%= stats.pendingClaims ? 'flag' : '' %>">
+    <div class="n"><%= stats.pendingClaims %></div><div class="k">Claims to review</div>
+  </div>
+  <div class="stat <%= stats.awaiting ? 'flag' : '' %>">
+    <div class="n"><%= stats.awaiting %></div><div class="k">Awaiting drop-off</div>
+  </div>
+  <div class="stat"><div class="n"><%= stats.inCustody %></div><div class="k">Held on shelf</div></div>
+  <div class="stat"><div class="n"><%= stats.returned %></div><div class="k">Returned to date</div></div>
+  <div class="stat"><div class="n"><%= stats.openLost %></div><div class="k">Open lost reports</div></div>
+  <div class="stat"><div class="n"><%= stats.students %></div><div class="k">Registered students</div></div>
+</div>
+
+<div class="split">
+  <div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Claims queue</h2>
+        <a href="/admin/claims">All claims</a>
+      </div>
+      <% if (!queue.length) { %>
+        <p class="muted mb0">Nothing waiting. The queue is clear.</p>
+      <% } else { %>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Claim</th><th>Item</th><th>Claimant</th><th>Proof</th><th>Waiting</th><th></th></tr></thead>
+            <tbody>
+              <% queue.forEach(function (c) { %>
+                <tr>
+                  <td><span class="tag plain"><%= c.ref_code %></span></td>
+                  <td><%= c.title %><br><span class="small muted"><%= c.item_ref %></span></td>
+                  <td><%= c.claimant %></td>
+                  <td><%= c.proof_count %> file<%= c.proof_count === 1 ? '' : 's' %></td>
+                  <td class="muted nowrap"><%= timeAgo(c.created_at) %></td>
+                  <td><a class="btn small" href="/admin/claims/<%= c.id %>">Review</a></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Expected at the counter</h2>
+        <a href="/admin/items?status=pending_dropoff">See all</a>
+      </div>
+      <p class="small muted">Students logged these. Confirm receipt when the item is physically in your hands.</p>
+      <% if (!dropoffs.length) { %>
+        <p class="muted mb0">Nothing expected.</p>
+      <% } else { %>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Reference</th><th>Item</th><th>Finder</th><th>Logged</th><th></th></tr></thead>
+            <tbody>
+              <% dropoffs.forEach(function (i) { %>
+                <tr>
+                  <td><span class="tag"><%= i.ref_code %></span></td>
+                  <td><%= i.title %></td>
+                  <td><%= i.finder %></td>
+                  <td class="muted nowrap"><%= timeAgo(i.created_at) %></td>
+                  <td><a class="btn small" href="/admin/items/<%= i.id %>">Receive</a></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (stale.length) { %>
+      <div class="panel note">
+        <h2>Held past <%= windowDays %> days</h2>
+        <p class="small muted">Unclaimed beyond the claim window. Clear these out under your disposal policy.</p>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Reference</th><th>Item</th><th>Days held</th><th></th></tr></thead>
+            <tbody>
+              <% stale.forEach(function (i) { %>
+                <tr>
+                  <td><span class="tag"><%= i.ref_code %></span></td>
+                  <td><%= i.title %></td>
+                  <td><%= i.days_held %></td>
+                  <td><a class="small" href="/admin/items/<%= i.id %>">Open</a></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <div>
+    <% if (trend.length) { %>
+      <div class="panel">
+        <h2>Items returned</h2>
+        <p class="small muted mb0">Last six months</p>
+        <%
+          var peak = 1;
+          trend.forEach(function (t) { if (t.n > peak) peak = t.n; });
+        %>
+        <div class="bars">
+          <% trend.forEach(function (t) { %>
+            <div class="col">
+              <span class="val"><%= t.n %></span>
+              <div class="fill" style="height:<%= Math.round((t.n / peak) * 100) %>%"></div>
+              <span class="lbl"><%= t.label %></span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="panel">
+      <h2>Recent activity</h2>
+      <% if (!activity.length) { %>
+        <p class="muted mb0">No activity logged yet.</p>
+      <% } else { %>
+        <ul class="feed">
+          <% activity.forEach(function (a) { %>
+            <li>
+              <strong><%= a.actor || 'System' %></strong>
+              <%= a.action.replace(/_/g, ' ') %>
+              <% if (a.detail) { %><span class="tag plain"><%= a.detail %></span><% } %>
+              <div class="when"><%= timeAgo(a.created_at) %></div>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

@@ -1,0 +1,30 @@
+{
+  "name": "campus-lost-and-found",
+  "version": "1.0.0",
+  "description": "Web-based Lost and Found Management System for a campus property office",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "db:init": "node db/init.js",
+    "seed": "node db/seed.js",
+    "admin:create": "node db/create-admin.js"
+  },
+  "engines": {
+    "node": ">=20 <26"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.5.0",
+    "connect-flash": "^0.1.1",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.22.3",
+    "express-session": "^1.18.0",
+    "multer": "^2.5.0",
+    "nodemailer": "^10.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

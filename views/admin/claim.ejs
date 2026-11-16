@@ -1,0 +1,136 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<p class="small"><a href="/admin/claims">← Claims</a></p>
+
+<div class="page-head">
+  <div>
+    <span class="tag plain"><%= claim.ref_code %></span>
+    <h1 style="margin-top:.5rem"><%= claim.claimant %> claims <%= claim.title %></h1>
+    <span class="pill <%= statusTone(claim.status) %>"><%= statusLabel(claim.status) %></span>
+    <span class="small muted"> · filed <%= fmtDateTime(claim.created_at) %></span>
+  </div>
+</div>
+
+<div class="split">
+  <div>
+    <div class="panel">
+      <h2>Does the identifying detail match?</h2>
+      <p class="small muted">Top is what the finder recorded and never published. Bottom is
+         what the claimant wrote without seeing it.</p>
+
+      <h3>Finder recorded</h3>
+      <div class="quote"><%= claim.secret_detail || 'The finder did not record a hidden detail. Judge on proof and the account of the loss alone.' %></div>
+
+      <h3 class="mt1">Claimant wrote</h3>
+      <div class="quote match"><%= claim.detail_answer %></div>
+    </div>
+
+    <div class="panel">
+      <h2>How they say they lost it</h2>
+      <div class="quote"><%= claim.statement %></div>
+      <h3 class="mt1">Where it was found</h3>
+      <p class="mb0"><%= claim.found_location %> on <%= fmtDateTime(claim.found_at) %></p>
+    </div>
+
+    <div class="panel">
+      <h2>Proof submitted</h2>
+      <% if (!proofs.length) { %>
+        <p class="muted mb0">No files attached.</p>
+      <% } else { %>
+        <div class="proofs">
+          <% proofs.forEach(function (p) { %>
+            <figure>
+              <a href="<%= p.file_path %>" target="_blank" rel="noopener">
+                <img src="<%= p.file_path %>" alt="<%= p.caption || 'Proof image' %>">
+              </a>
+              <figcaption><%= p.caption || 'Untitled' %></figcaption>
+            </figure>
+          <% }); %>
+        </div>
+        <p class="small muted mt1 mb0">Click any image to open it full size.</p>
+      <% } %>
+    </div>
+
+    <% if (rivals.length) { %>
+      <div class="panel note">
+        <h2>Other claims on this item</h2>
+        <p class="small muted">Approving this one automatically rejects the rest with an explanation.</p>
+        <ul class="facts">
+          <% rivals.forEach(function (r) { %>
+            <li>
+              <span class="k"><a href="/admin/claims/<%= r.id %>"><%= r.ref_code %></a> · <%= r.full_name %></span>
+              <span class="v"><span class="pill <%= statusTone(r.status) %>"><%= statusLabel(r.status) %></span></span>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
+    <% if (claim.status === 'pending') { %>
+      <div class="panel">
+        <h2>Decision</h2>
+        <form method="POST" action="/admin/claims/<%= claim.id %>/approve"
+              onsubmit="return confirm('Release <%= claim.item_ref %> to <%= claim.claimant %>?')">
+          <div class="field">
+            <label for="approveNote">Collection note <span class="muted">(optional)</span></label>
+            <input type="text" id="approveNote" name="adminNote"
+                   placeholder="Collect before Friday, office closes at 4pm.">
+            <p class="hint">Included in the approval email.</p>
+          </div>
+          <button class="btn" type="submit">Approve and release</button>
+        </form>
+
+        <hr style="border:0;border-top:1px solid var(--line-soft);margin:1.2rem 0">
+
+        <form method="POST" action="/admin/claims/<%= claim.id %>/reject">
+          <div class="field">
+            <label for="rejectNote">Reason for rejection</label>
+            <input type="text" id="rejectNote" name="adminNote" required
+                   placeholder="The described detail does not match the item.">
+            <p class="hint">Required. The claimant reads this in their email.</p>
+          </div>
+          <button class="btn danger" type="submit">Reject claim</button>
+        </form>
+      </div>
+    <% } else { %>
+      <div class="panel">
+        <h2>Decision recorded</h2>
+        <p><span class="pill <%= statusTone(claim.status) %>"><%= statusLabel(claim.status) %></span>
+           on <%= fmtDateTime(claim.reviewed_at) %></p>
+        <% if (claim.admin_note) { %><div class="quote"><%= claim.admin_note %></div><% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <div>
+    <div class="panel">
+      <span class="tag"><%= claim.item_ref %></span>
+      <h2 style="margin-top:.5rem"><%= claim.title %></h2>
+      <% if (claim.photo_path) { %>
+        <img class="photo-big" src="<%= claim.photo_path %>" alt="<%= claim.title %>">
+      <% } %>
+      <p class="small muted mt1"><%= claim.description %></p>
+      <ul class="facts">
+        <li><span class="k">Item status</span><span class="v"><span class="pill <%= statusTone(claim.item_status) %>"><%= statusLabel(claim.item_status) %></span></span></li>
+        <li><span class="k">Shelf</span><span class="v"><%= claim.storage_location || '—' %></span></li>
+      </ul>
+      <a class="btn ghost small" href="/admin/items/<%= claim.item_id %>">Open item record</a>
+    </div>
+
+    <div class="panel">
+      <h2>Claimant</h2>
+      <ul class="facts">
+        <li><span class="k">Name</span><span class="v"><%= claim.claimant %></span></li>
+        <li><span class="k">Student no.</span><span class="v"><%= claim.student_no || '—' %></span></li>
+        <li><span class="k">Program</span><span class="v"><%= claim.program || '—' %><% if (claim.section) { %> <%= claim.section %><% } %></span></li>
+        <li><span class="k">Email</span><span class="v small"><%= claim.email %></span></li>
+        <li><span class="k">Mobile</span><span class="v"><%= claim.phone || '—' %></span></li>
+      </ul>
+      <p class="small muted mb0">Verify this student number against their ID at the counter
+         before handing anything over.</p>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

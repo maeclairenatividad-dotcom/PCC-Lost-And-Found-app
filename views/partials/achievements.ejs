@@ -1,0 +1,17 @@
+<div class="achievements">
+  <% badges.list.forEach(function (b) { %>
+    <div class="badge <%= b.earned ? 'earned' : 'locked' %> tier-<%= b.tier %>" title="<%= b.desc %>">
+      <div class="medal">
+        <% if (b.earned) { %>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5.2-3.2 9.4-8 11-4.8-1.6-8-5.8-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        <% } else { %>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="11" width="15" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <% } %>
+      </div>
+      <div class="name"><%= b.name %></div>
+      <div class="hint"><%= b.desc %></div>
+      <div class="meter"><span style="width:<%= b.progress %>%"></span></div>
+      <% if (!b.earned) { %><div class="count"><%= b.cur %> / <%= b.goal %></div><% } %>
+    </div>
+  <% }); %>
+</div>

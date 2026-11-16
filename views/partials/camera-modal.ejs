@@ -1,0 +1,15 @@
+<div class="cam-modal" id="camModal" hidden role="dialog" aria-modal="true" aria-label="Take a selfie">
+  <div class="cam-sheet">
+    <div class="cam-stage">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <canvas id="camCanvas" hidden></canvas>
+    </div>
+    <div class="cam-bar">
+      <button type="button" class="btn ghost" id="camCancel">Cancel</button>
+      <button type="button" class="shutter" id="camShot" aria-label="Take picture"></button>
+      <button type="button" class="btn ghost" id="camRetake" hidden>Retake</button>
+      <button type="button" class="btn" id="camConfirm" hidden>Use photo</button>
+    </div>
+    <p class="cam-note" id="camNote">Allow camera access and frame yourself in the box.</p>
+  </div>
+</div>

@@ -1,0 +1,77 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<p class="small"><a href="/items/<%= item.id %>">← Back to <%= item.ref_code %></a></p>
+
+<div class="page-head">
+  <div>
+    <h1>Claim <%= item.title %></h1>
+    <p>Staff compare what you write here against the item itself. False claims are logged
+       against your student number.</p>
+  </div>
+</div>
+
+<form method="POST" action="/items/<%= item.id %>/claim" enctype="multipart/form-data">
+  <div class="split">
+    <div>
+      <div class="panel">
+        <h2>Your account of the loss</h2>
+        <div class="field mb0">
+          <label for="statement">How and where did you lose it?</label>
+          <textarea id="statement" name="statement" required
+                    placeholder="I left it on the second-floor study table at around 3pm on Tuesday after my class."><%= form.statement || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="panel note">
+        <h2>Identifying detail</h2>
+        <p class="small">The finder recorded one detail that is not shown in the public listing.
+           Describe anything about this item that a stranger could not know — marks, contents,
+           what is inside, a serial number.</p>
+        <div class="field mb0">
+          <label for="detailAnswer">What makes this yours?</label>
+          <input type="text" id="detailAnswer" name="detailAnswer" required maxlength="255"
+                 value="<%= form.detailAnswer || '' %>">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Proof</h2>
+        <p class="small">Attach up to five images: a photo of you using the item, the purchase
+           receipt, the box with a matching serial number, or a chat where you mention it.</p>
+        <div class="field">
+          <label for="proofs">Proof images</label>
+          <input type="file" id="proofs" name="proofs" accept="image/*" multiple required>
+          <p class="hint">JPG, PNG or WEBP, up to 5 MB each.</p>
+        </div>
+        <div class="field mb0">
+          <label for="caption1">Label your first file <span class="muted">(optional)</span></label>
+          <input type="text" id="caption1" name="captions" placeholder="Receipt from the campus store, June 2025">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" type="submit">File this claim</button>
+        <a class="btn ghost" href="/items/<%= item.id %>">Cancel</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <span class="tag"><%= item.ref_code %></span>
+      <h2 style="margin-top:.5rem"><%= item.title %></h2>
+      <% if (item.photo_path) { %>
+        <img class="photo-big" src="<%= item.photo_path %>" alt="<%= item.title %>">
+      <% } %>
+      <ul class="facts mt1">
+        <li><span class="k">Found at</span><span class="v"><%= item.found_location %></span></li>
+        <li><span class="k">Date found</span><span class="v"><%= fmtDate(item.found_at) %></span></li>
+        <% if (item.brand) { %><li><span class="k">Brand</span><span class="v"><%= item.brand %></span></li><% } %>
+        <% if (item.color) { %><li><span class="k">Colour</span><span class="v"><%= item.color %></span></li><% } %>
+      </ul>
+      <p class="small muted mt1 mb0">Filing a claim puts the item on hold so nobody else can
+        claim it while staff review yours.</p>
+    </div>
+  </div>
+</form>
+
+<%- include('../partials/foot') %>

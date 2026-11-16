@@ -1,0 +1,67 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Items at the office</h1>
+    <p>Search by what it is, its colour or brand, or where you think you dropped it.
+       Found yours? Open it and file a claim with proof.</p>
+  </div>
+</div>
+
+<form class="filters" method="GET" action="/items">
+  <div class="field">
+    <label for="search">Search</label>
+    <input type="text" id="search" name="search" value="<%= filters.search %>"
+           placeholder="black umbrella, library, Samsung…">
+  </div>
+  <div class="field" style="flex:0 1 200px">
+    <label for="category">Category</label>
+    <select id="category" name="category">
+      <option value="">All categories</option>
+      <% categories.forEach(function (c) { %>
+        <option value="<%= c.id %>" <%= filters.category === c.id ? 'selected' : '' %>><%= c.name %></option>
+      <% }); %>
+    </select>
+  </div>
+  <div class="field" style="flex:0 1 160px">
+    <label for="sort">Sort by</label>
+    <select id="sort" name="sort">
+      <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Most recent</option>
+      <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>Oldest first</option>
+    </select>
+  </div>
+  <button class="btn" type="submit">Search</button>
+  <% if (filters.search || filters.category) { %><a class="btn ghost" href="/items">Clear</a><% } %>
+</form>
+
+<p class="small muted"><%= items.length %> item<%= items.length === 1 ? '' : 's' %> listed.</p>
+
+<% if (!items.length) { %>
+  <div class="empty">
+    <h3>No match</h3>
+    <p>Nothing here fits that search. File a lost report and we will email you if it turns up.</p>
+    <a class="btn" href="/lost/new">Report a loss</a>
+  </div>
+<% } else { %>
+  <div class="grid">
+    <% items.forEach(function (i) { %>
+      <a class="record" href="/items/<%= i.id %>">
+        <span class="tag"><%= i.ref_code %></span>
+        <div class="shot" <% if (i.photo_path) { %>style="background-image:url('<%= i.photo_path %>')"<% } %>>
+          <% if (!i.photo_path) { %>No photo<% } %>
+        </div>
+        <div class="body">
+          <div class="name"><%= i.title %></div>
+          <div class="meta">
+            <%= i.found_location %><br>
+            Found <%= fmtDate(i.found_at) %><% if (i.category) { %> · <%= i.category %><% } %>
+          </div>
+          <div class="foot"><span class="pill <%= statusTone(i.status) %>"><%= statusLabel(i.status) %></span></div>
+        </div>
+      </a>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>

@@ -1,0 +1,63 @@
+<%- include('../partials/head') %>
+<div class="auth-wrap">
+  <section class="auth-art">
+    <span class="tag">Student Affairs · Property office</span>
+    <h1>Students sign in here.</h1>
+    <p>Log the things you find, search what's at the office, report something lost,
+       and claim your stuff with proof.</p>
+    <div class="auth-tags">
+      <span class="tag">LF-2026-0118</span>
+      <span class="tag">LR-2026-0042</span>
+      <span class="tag">CL-2026-0017</span>
+    </div>
+  </section>
+
+  <section class="auth-form">
+    <div class="scene" aria-hidden="true">
+      <div class="sign"><span>LOST &amp; FOUND</span></div>
+      <div class="tape t1"></div>
+      <div class="tape t2"></div>
+      <div class="tape v left"></div>
+      <div class="tape v right"></div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="mark">Lost &amp; Found</span>
+        <span class="sub">Student portal</span>
+      </div>
+      <div class="card-body">
+        <p class="back"><a href="/login">← Choose a different portal</a></p>
+
+        <h2>Student sign in</h2>
+        <p class="muted small lead">Use your school email address.</p>
+
+        <% success.forEach(function (m) { %><div class="flash ok"><%= m %></div><% }); %>
+        <% error.forEach(function (m) { %><div class="flash err"><%= m %></div><% }); %>
+
+        <form method="POST" action="/student/login">
+          <div class="field">
+            <label for="email">School email</label>
+            <input type="email" id="email" name="email" required autofocus
+                   value="<%= form.email || '' %>">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <button class="btn" type="submit">Sign in</button>
+
+          <p class="demo mb0">
+            Demo student (password <strong>Password123</strong>):<br>
+            ana.reyes@student.school.edu
+          </p>
+        </form>
+
+        <div class="card-foot">
+          No account yet? <a href="/register">Create one</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

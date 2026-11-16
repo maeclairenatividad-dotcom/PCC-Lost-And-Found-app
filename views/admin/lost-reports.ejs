@@ -1,0 +1,39 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Lost reports</h1>
+    <p>What students say they are missing. New arrivals are matched against open reports
+       automatically, but scan this list when something unusual comes in.</p>
+  </div>
+</div>
+
+<div class="panel">
+  <% if (!reports.length) { %>
+    <p class="muted mb0">No reports filed yet.</p>
+  <% } else { %>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Reference</th><th>Item</th><th>Lost at</th><th>Student</th><th>Status</th><th>Filed</th></tr></thead>
+        <tbody>
+          <% reports.forEach(function (r) { %>
+            <tr>
+              <td><span class="tag plain"><%= r.ref_code %></span></td>
+              <td>
+                <strong><%= r.title %></strong>
+                <% if (r.brand || r.color) { %><br><span class="small muted"><%= [r.brand, r.color].filter(Boolean).join(' · ') %></span><% } %>
+              </td>
+              <td><%= r.lost_location %><br><span class="small muted"><%= fmtDate(r.lost_at) %></span></td>
+              <td><%= r.student %><br><span class="small muted"><%= r.student_no %></span></td>
+              <td><span class="pill <%= statusTone(r.status) %>"><%= statusLabel(r.status) %></span></td>
+              <td class="muted nowrap"><%= timeAgo(r.created_at) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/foot') %>

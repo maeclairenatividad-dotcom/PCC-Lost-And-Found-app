@@ -1,0 +1,75 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Report a lost item</h1>
+    <p>We check every new report against items handed in and email you when something
+       similar arrives.</p>
+  </div>
+</div>
+
+<form method="POST" action="/lost/new" enctype="multipart/form-data">
+  <div class="split">
+    <div class="panel">
+      <h2>What you lost</h2>
+      <div class="field">
+        <label for="title">Item</label>
+        <input type="text" id="title" name="title" required maxlength="140"
+               placeholder="Grey Jansport backpack" value="<%= form.title || '' %>">
+      </div>
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" required
+                  placeholder="Include marks, contents and anything that identifies it as yours."><%= form.description || '' %></textarea>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="categoryId">Category</label>
+          <select id="categoryId" name="categoryId">
+            <option value="">Choose one</option>
+            <% categories.forEach(function (c) { %>
+              <option value="<%= c.id %>" <%= String(form.categoryId) === String(c.id) ? 'selected' : '' %>><%= c.name %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="brand">Brand</label>
+          <input type="text" id="brand" name="brand" value="<%= form.brand || '' %>">
+        </div>
+      </div>
+      <div class="field">
+        <label for="color">Main colour</label>
+        <input type="text" id="color" name="color" value="<%= form.color || '' %>">
+      </div>
+      <div class="field mb0">
+        <label for="photo">Photo of the item <span class="muted">(optional)</span></label>
+        <p class="hint">An old photo of you with the item doubles as proof later.</p>
+        <input type="file" id="photo" name="photo" accept="image/*">
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>Where and when</h2>
+        <div class="field">
+          <label for="lostLocation">Where you last had it</label>
+          <input type="text" id="lostLocation" name="lostLocation" required
+                 placeholder="Canteen, table by the window" value="<%= form.lostLocation || '' %>">
+        </div>
+        <div class="field mb0">
+          <label for="lostAt">Date and time</label>
+          <input type="datetime-local" id="lostAt" name="lostAt" required
+                 value="<%= form.lostAt || dtLocalValue() %>">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" type="submit">File the report</button>
+        <a class="btn ghost" href="/items">Search items first</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<%- include('../partials/foot') %>

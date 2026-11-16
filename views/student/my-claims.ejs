@@ -1,0 +1,63 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Your claims</h1>
+    <p>Wait for the approval email before going to the office. Staff will not release an
+       item on an unreviewed claim.</p>
+  </div>
+</div>
+
+<% if (!claims.length) { %>
+  <div class="empty">
+    <h3>No claims yet</h3>
+    <p>When you spot your item in the listing, open it and file a claim with proof.</p>
+    <a class="btn" href="/items">Browse items</a>
+  </div>
+<% } else { %>
+  <% claims.forEach(function (c) { %>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <span class="tag plain"><%= c.ref_code %></span>
+          <h2 style="margin:.4rem 0 .15rem"><%= c.title %></h2>
+          <span class="small muted">Item <%= c.item_ref %> · filed <%= fmtDate(c.created_at) %></span>
+        </div>
+        <span class="pill <%= statusTone(c.status) %>"><%= statusLabel(c.status) %></span>
+      </div>
+
+      <% if (c.status === 'approved') { %>
+        <div class="quote match">Approved. Collect it at the property office<%= c.storage_location ? ' (' + c.storage_location + ')' : '' %> and bring your student ID.</div>
+      <% } else if (c.status === 'rejected' && c.admin_note) { %>
+        <div class="quote">Reason: <%= c.admin_note %></div>
+      <% } else if (c.status === 'pending') { %>
+        <p class="small muted">Under review since <%= timeAgo(c.created_at) %>. You will get an email with the decision.</p>
+      <% } %>
+
+      <% if (c.proofs.length) { %>
+        <h3 class="mt1">Proof you submitted</h3>
+        <div class="proofs">
+          <% c.proofs.forEach(function (p) { %>
+            <figure>
+              <img src="<%= p.file_path %>" alt="<%= p.caption || 'Proof image' %>">
+              <% if (p.caption) { %><figcaption><%= p.caption %></figcaption><% } %>
+            </figure>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <div class="actions">
+        <a class="btn ghost small" href="/items/<%= c.item_id %>">View item</a>
+        <% if (c.status === 'pending') { %>
+          <form method="POST" action="/claims/<%= c.id %>/cancel" class="inline-form"
+                onsubmit="return confirm('Withdraw this claim?')">
+            <button class="btn danger small" type="submit">Withdraw claim</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  <% }); %>
+<% } %>
+
+<%- include('../partials/foot') %>

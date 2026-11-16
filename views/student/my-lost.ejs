@@ -1,0 +1,46 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Your lost reports</h1>
+    <p>While a report is open we email you whenever a similar item is handed in.</p>
+  </div>
+  <a class="btn" href="/lost/new">File a report</a>
+</div>
+
+<% if (!reports.length) { %>
+  <div class="empty">
+    <h3>No reports filed</h3>
+    <p>Search the listing first. If it is not there yet, file a report and we will watch for it.</p>
+    <a class="btn" href="/items">Browse items</a>
+  </div>
+<% } else { %>
+  <div class="panel">
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Reference</th><th>Item</th><th>Lost at</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <% reports.forEach(function (r) { %>
+            <tr>
+              <td><span class="tag plain"><%= r.ref_code %></span></td>
+              <td><strong><%= r.title %></strong><% if (r.category) { %><br><span class="small muted"><%= r.category %></span><% } %></td>
+              <td><%= r.lost_location %><br><span class="small muted"><%= fmtDate(r.lost_at) %></span></td>
+              <td><span class="pill <%= statusTone(r.status) %>"><%= statusLabel(r.status) %></span></td>
+              <td>
+                <% if (r.status === 'open') { %>
+                  <form method="POST" action="/lost/<%= r.id %>/close" class="inline-form">
+                    <input type="hidden" name="status" value="resolved">
+                    <button class="btn ghost small" type="submit">I got it back</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>

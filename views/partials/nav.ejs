@@ -1,0 +1,52 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">Lost &amp; Found</span>
+      <span class="brand-sub"><%= currentUser.role === 'admin' ? 'Property office' : 'Student portal' %></span>
+    </div>
+
+    <nav class="nav">
+      <% if (currentUser.role === 'admin') { %>
+        <span class="nav-group">Desk</span>
+        <a href="/admin" class="<%= path === '/admin' ? 'on' : '' %>">Overview</a>
+        <a href="/admin/claims" class="<%= path.startsWith('/admin/claims') ? 'on' : '' %>">
+          Claims
+          <% if (typeof navPending !== 'undefined' && navPending) { %><span class="count"><%= navPending %></span><% } %>
+        </a>
+        <a href="/admin/items" class="<%= path.startsWith('/admin/items') ? 'on' : '' %>">Inventory</a>
+        <span class="nav-group">Records</span>
+        <a href="/admin/lost-reports" class="<%= path.startsWith('/admin/lost-reports') ? 'on' : '' %>">Lost reports</a>
+        <a href="/admin/users" class="<%= path.startsWith('/admin/users') ? 'on' : '' %>">Accounts</a>
+        <a href="/admin/emails" class="<%= path.startsWith('/admin/emails') ? 'on' : '' %>">Notifications</a>
+      <% } else { %>
+        <span class="nav-group">Find</span>
+        <a href="/dashboard" class="<%= path === '/dashboard' ? 'on' : '' %>">Dashboard</a>
+        <a href="/items" class="<%= path.startsWith('/items') ? 'on' : '' %>">Browse items</a>
+        <span class="nav-group">Report</span>
+        <a href="/found/new" class="<%= path.startsWith('/found') ? 'on' : '' %>">I found something</a>
+        <a href="/lost/new" class="<%= path === '/lost/new' ? 'on' : '' %>">I lost something</a>
+        <span class="nav-group">Yours</span>
+        <a href="/claims" class="<%= path.startsWith('/claims') ? 'on' : '' %>">Your claims</a>
+        <a href="/my-items" class="<%= path === '/my-items' ? 'on' : '' %>">Items you handed in</a>
+        <a href="/lost" class="<%= path === '/lost' ? 'on' : '' %>">Your lost reports</a>
+        <a href="/profile" class="<%= path === '/profile' ? 'on' : '' %>">Your profile</a>
+      <% } %>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="/profile" class="who-block who-link <%= path === '/profile' ? 'on' : '' %>" title="Edit your profile">
+        <% if (currentUser.avatar) { %><img class="avatar" src="<%= currentUser.avatar %>" alt=""><% } %>
+        <div>
+          <span class="who"><%= currentUser.name %></span>
+          <span class="role"><%= currentUser.studentNo || 'Staff' %> · Edit profile</span>
+        </div>
+      </a>
+      <form method="POST" action="/logout">
+        <button type="submit" class="linkbtn">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main">
+    <% success.forEach(function (m) { %><div class="flash ok"><%= m %></div><% }); %>
+    <% error.forEach(function (m) { %><div class="flash err"><%= m %></div><% }); %>

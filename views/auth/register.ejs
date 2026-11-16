@@ -1,0 +1,133 @@
+<%- include('../partials/head') %>
+<div class="auth-wrap">
+  <section class="auth-art">
+    <span class="tag">Student Affairs · Property office</span>
+    <h1>Create your student account.</h1>
+    <p>Your student number links every item you hand in and every claim you file,
+       so staff can verify you at the counter.</p>
+  </section>
+
+  <section class="auth-form">
+    <div class="scene" aria-hidden="true">
+      <div class="sign"><span>LOST &amp; FOUND</span></div>
+      <div class="tape t1"></div>
+      <div class="tape t2"></div>
+      <div class="tape v left"></div>
+      <div class="tape v right"></div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="mark">Lost &amp; Found</span>
+        <span class="sub">New student account</span>
+      </div>
+      <div class="card-body">
+        <p class="back"><a href="/student/login">← Already have an account</a></p>
+
+        <h2>Create an account</h2>
+        <p class="muted small lead">Students only — the property office issues staff accounts.</p>
+
+        <% error.forEach(function (m) { %><div class="flash err"><%= m %></div><% }); %>
+
+<form method="POST" action="/register" enctype="multipart/form-data">
+          <div class="field avatar-field">
+            <label class="avatar-legend" for="photoSelfie">Profile photo <span class="muted">(optional)</span></label>
+            <label class="avatar-picker" data-selfie>
+              <img id="photoPreview" class="avatar-preview" src="" alt="Your photo preview" hidden>
+              <span class="avatar-empty" id="avatarEmpty">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Profile photo</span>
+              </span>
+            </label>
+            <div class="avatar-actions">
+              <label class="btn ghost small" data-selfie>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Take a selfie
+              </label>
+              <label class="btn ghost small" for="photoPick">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Choose photo
+              </label>
+            </div>
+            <input type="file" id="photoSelfie" name="photo" accept="image/*" capture="user" hidden>
+            <input type="file" id="photoPick" name="photo" accept="image/*" hidden>
+            <p class="hint">Take a fresh selfie with your camera, or pick a photo from your files.</p>
+          </div>
+          <div class="field">
+            <label for="fullName">Full name</label>
+            <input type="text" id="fullName" name="fullName" required value="<%= form.fullName || '' %>" placeholder="Maria Santos">
+          </div>
+          <div class="field">
+            <label for="studentNo">Student number</label>
+            <input type="text" id="studentNo" name="studentNo" required
+                   placeholder="2024-08123" value="<%= form.studentNo || '' %>">
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="program">Program</label>
+              <select id="program" name="program" required>
+                <option value="" disabled <%= !form.program ? 'selected' : '' %>>Select a program…</option>
+                <% PROGRAMS.forEach(function (p) { %>
+                  <option value="<%= p %>" <%= form.program === p ? 'selected' : '' %>><%= p %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="field">
+              <label for="section">Section</label>
+              <input type="text" id="section" name="section" required
+                     placeholder="e.g. 1-A" value="<%= form.section || '' %>">
+              <p class="hint">Type your section, like 1-A or 3-B.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="email">School email</label>
+              <input type="email" id="email" name="email" required value="<%= form.email || '' %>"
+                     placeholder="firstname.lastname@student.school.edu">
+            </div>
+            <div class="field">
+              <label for="phone">Mobile <span class="muted">(optional)</span></label>
+              <input type="tel" id="phone" name="phone" value="<%= form.phone || '' %>"
+                     placeholder="0917 000 0000">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" required minlength="8">
+              <p class="hint">At least 8 characters.</p>
+            </div>
+            <div class="field">
+              <label for="confirmPassword">Repeat password</label>
+              <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+          </div>
+          <button class="btn" type="submit">Create account</button>
+        </form>
+
+        <script>
+          (function () {
+            var selfie = document.getElementById('photoSelfie');
+            var pick = document.getElementById('photoPick');
+            var preview = document.getElementById('photoPreview');
+            var empty = document.getElementById('avatarEmpty');
+            function usePhoto(input) {
+              if (input.files && input.files[0]) {
+                preview.src = URL.createObjectURL(input.files[0]);
+                preview.hidden = false;
+                empty.style.display = 'none';
+                (input === selfie ? pick : selfie).value = '';
+              }
+            }
+            selfie.addEventListener('change', function () { usePhoto(selfie); });
+            pick.addEventListener('change', function () { usePhoto(pick); });
+          })();
+        </script>
+        <%- include('../partials/camera-modal') %>
+        <script src="/js/camera-capture.js"></script>
+        <script>cameraCaptureInit('photoSelfie');</script>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

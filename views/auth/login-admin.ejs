@@ -1,0 +1,54 @@
+<%- include('../partials/head') %>
+<div class="auth-wrap">
+  <section class="auth-art">
+    <span class="tag">Property office</span>
+    <h1>Staff sign in.</h1>
+    <p>Receive dropped-off items, review claims, and manage the inventory from
+       the administrator dashboard.</p>
+  </section>
+
+  <section class="auth-form">
+    <div class="scene" aria-hidden="true">
+      <div class="sign"><span>LOST &amp; FOUND</span></div>
+      <div class="tape t1"></div>
+      <div class="tape t2"></div>
+      <div class="tape v left"></div>
+      <div class="tape v right"></div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="mark">Lost &amp; Found</span>
+        <span class="sub">Property office</span>
+      </div>
+      <div class="card-body">
+        <p class="back"><a href="/login">← Choose a different portal</a></p>
+
+        <h2>Administrator sign in</h2>
+        <p class="muted small lead">Use the staff email assigned by the property office.</p>
+
+        <% success.forEach(function (m) { %><div class="flash ok"><%= m %></div><% }); %>
+        <% error.forEach(function (m) { %><div class="flash err"><%= m %></div><% }); %>
+
+        <form method="POST" action="/admin/login">
+          <div class="field">
+            <label for="email">Staff email</label>
+            <input type="email" id="email" name="email" required autofocus
+                   value="<%= form.email || '' %>">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <button class="btn" type="submit">Sign in</button>
+
+          <p class="demo mb0">
+            Demo admin (password <strong>Password123</strong>):<br>
+            admin@school.edu
+          </p>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Accounts</h1>
+    <p>Disable an account to block sign-in without deleting its history.</p>
+  </div>
+</div>
+
+<div class="split">
+  <div class="panel">
+    <h2>All accounts</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Name</th><th>Student no.</th><th>Role</th><th>Finds</th><th>Claims</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <% users.forEach(function (u) { %>
+            <tr>
+              <td><strong><%= u.full_name %></strong><br><span class="small muted"><%= u.email %></span></td>
+              <td><%= u.student_no || '—' %></td>
+              <td><span class="pill <%= u.role === 'admin' ? 'done' : 'mute' %>"><%= u.role === 'admin' ? 'Staff' : 'Student' %></span></td>
+              <td><%= u.finds %></td>
+              <td><%= u.claims %></td>
+              <td><span class="pill <%= u.is_active ? 'good' : 'bad' %>"><%= u.is_active ? 'Active' : 'Disabled' %></span></td>
+              <td>
+                <% if (u.id !== currentUser.id) { %>
+                  <form method="POST" action="/admin/users/<%= u.id %>/toggle" class="inline-form">
+                    <button class="btn ghost small" type="submit"><%= u.is_active ? 'Disable' : 'Enable' %></button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Add office staff</h2>
+    <p class="small muted">Staff accounts see this whole area, including hidden identifying details.</p>
+    <form method="POST" action="/admin/users/staff">
+      <div class="field">
+        <label for="fullName">Full name</label>
+        <input type="text" id="fullName" name="fullName" required>
+      </div>
+      <div class="field">
+        <label for="email">Work email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="field">
+        <label for="password">Temporary password</label>
+        <input type="password" id="password" name="password" required minlength="8">
+        <p class="hint">At least 8 characters. Tell them to change it after signing in.</p>
+      </div>
+      <button class="btn" type="submit">Create staff account</button>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

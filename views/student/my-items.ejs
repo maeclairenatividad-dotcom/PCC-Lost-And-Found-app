@@ -1,0 +1,45 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<div class="page-head">
+  <div>
+    <h1>Items you handed in</h1>
+    <p>Anything still marked “Awaiting drop-off” needs to be brought to the property office.</p>
+  </div>
+  <a class="btn" href="/found/new">Log another</a>
+</div>
+
+<% if (!items.length) { %>
+  <div class="empty">
+    <h3>Nothing logged yet</h3>
+    <p>Picked something up on campus? Log it and hand it over.</p>
+    <a class="btn" href="/found/new">Log a found item</a>
+  </div>
+<% } else { %>
+  <div class="panel">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Reference</th><th>Item</th><th>Found at</th><th>Status</th><th>Logged</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% items.forEach(function (i) { %>
+            <tr>
+              <td><span class="tag"><%= i.ref_code %></span></td>
+              <td>
+                <strong><%= i.title %></strong>
+                <% if (i.pending_claims) { %><br><span class="small muted"><%= i.pending_claims %> claim(s) in review</span><% } %>
+              </td>
+              <td><%= i.found_location %><br><span class="small muted"><%= fmtDate(i.found_at) %></span></td>
+              <td><span class="pill <%= statusTone(i.status) %>"><%= statusLabel(i.status) %></span></td>
+              <td class="muted nowrap"><%= timeAgo(i.created_at) %></td>
+              <td><a class="small" href="/items/<%= i.id %>">Open</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>

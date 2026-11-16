@@ -1,0 +1,85 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<p class="small"><a href="/items">← All items</a></p>
+
+<div class="page-head">
+  <div>
+    <span class="tag"><%= item.ref_code %></span>
+    <h1 style="margin-top:.5rem"><%= item.title %></h1>
+    <span class="pill <%= statusTone(item.status) %>"><%= statusLabel(item.status) %></span>
+  </div>
+</div>
+
+<div class="split">
+  <div>
+    <% if (item.photo_path) { %>
+      <img class="photo-big" src="<%= item.photo_path %>" alt="Photo of <%= item.title %>">
+    <% } else { %>
+      <div class="empty" style="padding:3rem 1rem">The finder did not upload a photo.</div>
+    <% } %>
+
+    <div class="panel mt1">
+      <h2>Description</h2>
+      <p class="mb0"><%= item.description %></p>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Record</h2>
+      <ul class="facts">
+        <li><span class="k">Found at</span><span class="v"><%= item.found_location %></span></li>
+        <li><span class="k">Date found</span><span class="v"><%= fmtDateTime(item.found_at) %></span></li>
+        <% if (item.category) { %><li><span class="k">Category</span><span class="v"><%= item.category %></span></li><% } %>
+        <% if (item.brand) { %><li><span class="k">Brand</span><span class="v"><%= item.brand %></span></li><% } %>
+        <% if (item.color) { %><li><span class="k">Colour</span><span class="v"><%= item.color %></span></li><% } %>
+        <li><span class="k">Turned in by</span><span class="v"><%= item.finder_name %></span></li>
+        <% if (item.status === 'in_custody' && item.storage_location) { %>
+          <li><span class="k">Held at</span><span class="v"><%= item.storage_location %></span></li>
+        <% } %>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <% if (myClaim) { %>
+        <h2>Your claim</h2>
+        <p>You filed <span class="tag plain"><%= myClaim.ref_code %></span> on this item.</p>
+        <p><span class="pill <%= statusTone(myClaim.status) %>"><%= statusLabel(myClaim.status) %></span></p>
+        <% if (myClaim.admin_note) { %><div class="quote"><%= myClaim.admin_note %></div><% } %>
+        <a class="btn ghost mt1" href="/claims">Track your claims</a>
+
+      <% } else if (item.status === 'in_custody' && currentUser.role === 'student') { %>
+        <% if (item.finder_id === currentUser.id) { %>
+          <h2>You turned this in</h2>
+          <p class="mb0 muted">Finders cannot claim their own entries. Staff will email you once it is collected.</p>
+        <% } else { %>
+          <h2>Is this yours?</h2>
+          <p>File a claim with proof. Staff compare it against a detail the finder recorded
+             but did not publish here.</p>
+          <p class="small muted">Do not go to the office until your claim is approved by email.</p>
+          <a class="btn" href="/items/<%= item.id %>/claim">Claim this item</a>
+        <% } %>
+
+      <% } else if (item.status === 'on_hold') { %>
+        <h2>Claim under review</h2>
+        <p class="mb0 muted">Another student has claimed this and staff are checking their proof.
+           If it is rejected, this item opens up again.</p>
+
+      <% } else if (item.status === 'returned') { %>
+        <h2>Already returned</h2>
+        <p class="mb0 muted">This item went back to its verified owner on <%= fmtDate(item.released_at) %>.</p>
+
+      <% } else if (item.status === 'pending_dropoff') { %>
+        <h2>Not at the office yet</h2>
+        <p class="mb0 muted">The finder has logged it but has not handed it over. Check back soon.</p>
+
+      <% } else { %>
+        <h2>Not claimable</h2>
+        <p class="mb0 muted">This record is closed.</p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>
