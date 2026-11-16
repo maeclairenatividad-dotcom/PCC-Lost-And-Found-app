@@ -8,10 +8,10 @@
  * If no schema exists yet it builds it (via db/schema.sql) first.
  */
 require('dotenv').config();
-const path = require('path');
-const fs = require('fs');
 const bcrypt = require('bcryptjs');
-const { q, one, run, exec, pragma } = require('../src/db');
+const {
+  one, run, pragma, ensureSchema, isPostgres, engine, close
+} = require('../src/db');
 
 const PASSWORD = 'Password123';
 
@@ -22,24 +22,28 @@ const daysAgo = (n, hour = 14) => {
   return d;
 };
 
-async function ensureSchema() {
-  const found = await one("SELECT name FROM sqlite_master WHERE type='table' AND name='users'");
-  if (found) return;
-  const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-  exec(schema);
-}
-
 async function main() {
   await ensureSchema();
   const hash = await bcrypt.hash(PASSWORD, 10);
 
-  console.log('Clearing existing records…');
-  pragma('foreign_keys = OFF');
-  for (const t of ['claim_proofs', 'claims', 'items', 'lost_reports', 'email_log', 'activity_log', 'users']) {
-    await run(`DELETE FROM ${t}`);
+  console.log(`Clearing existing demo records (${engine})…`);
+
+  if (isPostgres) {
+    await run(`
+      TRUNCATE claim_proofs, claims, items, lost_reports,
+               email_log, activity_log, users, sessions
+      RESTART IDENTITY CASCADE`);
+  } else {
+    pragma('foreign_keys = OFF');
+    for (const t of [
+      'claim_proofs', 'claims', 'items', 'lost_reports',
+      'email_log', 'activity_log', 'users', 'sessions'
+    ]) {
+      await run(`DELETE FROM ${t}`);
+    }
+    await run('DELETE FROM sqlite_sequence').catch(() => {});
+    pragma('foreign_keys = ON');
   }
-  await run('DELETE FROM sqlite_sequence').catch(() => {});
-  pragma('foreign_keys = ON');
 
   console.log('Creating accounts…');
   const people = [
@@ -165,7 +169,11 @@ async function main() {
   `);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => close())
+  .then(() => process.exit(0))
+  .catch(async (err) => {
+    console.error(err);
+    await close().catch(() => {});
+    process.exit(1);
+  });

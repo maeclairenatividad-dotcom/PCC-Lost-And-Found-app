@@ -17,9 +17,9 @@ router.get('/dashboard', requireStudent, async (req, res, next) => {
     const [stats] = await q(`
       SELECT
         (SELECT COUNT(*) FROM items WHERE status = 'in_custody')              AS available,
-        (SELECT COUNT(*) FROM items WHERE finder_id = ?)                      AS myFinds,
-        (SELECT COUNT(*) FROM claims WHERE claimant_id = ? AND status='pending') AS myPending,
-        (SELECT COUNT(*) FROM lost_reports WHERE student_id = ? AND status='open') AS myLost
+        (SELECT COUNT(*) FROM items WHERE finder_id = ?)                      AS "myFinds",
+        (SELECT COUNT(*) FROM claims WHERE claimant_id = ? AND status='pending') AS "myPending",
+        (SELECT COUNT(*) FROM lost_reports WHERE student_id = ? AND status='open') AS "myLost"
     `, [me, me, me]);
 
     const recent = await q(`

@@ -10,22 +10,13 @@
  */
 require('dotenv').config();
 
-const path = require('path');
-const fs = require('fs');
 const readline = require('readline/promises');
 const bcrypt = require('bcryptjs');
-const { one, run, exec } = require('../src/db');
-
-async function ensureSchema() {
-  const found = await one("SELECT name FROM sqlite_master WHERE type='table' AND name='users'");
-  if (found) return;
-  const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-  exec(schema);
-  console.log('Created the database schema.');
-}
+const { one, run, ensureSchema, engine, close } = require('../src/db');
 
 async function main() {
-  await ensureSchema();
+  const created = await ensureSchema();
+  if (created) console.log(`Created the ${engine} schema.`);
 
   let email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
   let name = String(process.env.ADMIN_NAME || 'Property office staff').trim();
@@ -55,7 +46,7 @@ async function main() {
 
   if (existing) {
     await run(
-      "UPDATE users SET full_name = ?, password_hash = ?, role = 'admin', is_active = 1 WHERE id = ?",
+      "UPDATE users SET full_name = ?, password_hash = ?, role = 'admin', is_active = TRUE WHERE id = ?",
       [name, hash, existing.id]
     );
     console.log(`\n  Reset staff account: ${email}\n`);
@@ -71,8 +62,10 @@ async function main() {
 }
 
 main()
+  .then(() => close())
   .then(() => process.exit(0))
-  .catch((err) => {
+  .catch(async (err) => {
     console.error('\n  Could not create the staff account:', err.message, '\n');
+    await close().catch(() => {});
     process.exit(1);
   });

@@ -3,8 +3,13 @@
 A web-based lost and found system for a school property office, with separate
 interfaces for students and administrators.
 
-Node.js + Express + SQLite, server-rendered with EJS. No build step. The database is
-a single `db/app.db` file — no database server to install or maintain.
+Node.js + Express, server-rendered with EJS. No build step. Two database engines
+are supported from the same code:
+
+- **SQLite** (default) — a single `db/app.db` file, nothing to install. Best for
+  local demos and offline use.
+- **Postgres** — set `DATABASE_URL` and the same app runs on Neon, Supabase,
+  Railway, RDS or a local Postgres server. Recommended for deployment.
 
 ---
 
@@ -58,6 +63,8 @@ An item held longer than `CLAIM_WINDOW_DAYS` is flagged on the admin dashboard f
 Requires **Node.js 20 or 22 LTS** (even-numbered LTS releases have prebuilt
 `better-sqlite3` binaries, so nothing compiles on install).
 
+### Local demo (SQLite, zero setup)
+
 ```bash
 # 1. Install dependencies
 npm install
@@ -65,6 +72,7 @@ npm install
 # 2. Configure
 cp .env.example .env
 #    SESSION_SECRET is the only thing you really need to change in development
+#    Leave DATABASE_URL commented out to use SQLite.
 
 # 3. Build the database and load demo accounts/sample records
 npm run db:init   # creates the tables (drops anything existing — dev only)
@@ -77,6 +85,37 @@ npm start          # or: npm run dev  (auto-restart via nodemon)
 The SQLite file is `db/app.db`. `npm run seed` also builds the schema on its own
 if you skip `db:init`, so the shortest path to a working demo is just
 `npm install && npm run seed && npm start`.
+
+### Using Postgres (Neon)
+
+Postgres is selected automatically when `DATABASE_URL` starts with `postgres://`
+or `postgresql://`. Nothing else in the app changes.
+
+1. Create a free database at [neon.tech](https://neon.tech) and copy the
+   connection string from the dashboard (it includes `?sslmode=require`).
+2. Put it in `.env`:
+
+   ```ini
+   DATABASE_URL=postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+   PG_TIMEZONE=Asia/Manila
+   ```
+
+3. Create the tables and, for a demo, the sample data:
+
+   ```bash
+   npm run db:init   # DESTRUCTIVE: drops and rebuilds every table
+   npm run seed      # demo accounts + records — skip this on a real deployment
+   npm start
+   ```
+
+   On a real deployment you can skip `db:init` entirely: the app creates the
+   schema automatically on first boot. Then make the first staff account with
+   `npm run admin:create`.
+
+`PG_TIMEZONE` (default `Asia/Manila`) decides what "now" means when the app
+writes timestamps, so dates look right even though Neon's server runs in UTC.
+Sessions live in the database, so logins survive restarts and redeploys on both
+engines.
 
 Open http://localhost:3000 — it shows a sign-in landing page with a separate
 portal for each role:
@@ -147,13 +186,14 @@ Sending never blocks a user action: if SMTP fails, the failure is recorded in
 ```
 db/
   schema.sql        tables, indexes, categories (SQLite)
-  init.js           rebuilds the schema from schema.sql
+  schema.postgres.sql  the same schema for Postgres (Neon, Supabase, RDS…)
+  init.js           rebuilds the schema (destructive — dev only)
   seed.js           demo accounts and sample records
   create-admin.js   creates the first staff account (no demo data)
 src/
   app.js            express setup, sessions, health check, error handling
-  db.js             sqlite connection (better-sqlite3), query helpers, reference codes
-  session-store.js  SQLite-backed session store (logins survive restarts)
+  db.js             database layer: SQLite or Postgres, chosen by DATABASE_URL
+  session-store.js  database-backed session store (logins survive restarts)
   mailer.js         nodemailer transport and all email templates
   matching.js       cross-references found items against lost reports
   helpers.js        date and status formatting shared with the views
@@ -198,23 +238,26 @@ audit trail intact for the whole record.
 
 ## Deployment
 
-See **[DEPLOY.md](DEPLOY.md)** for a step-by-step guide (Render/Railway/VPS),
-persistent-disk setup for `db/` and `public/uploads/`, SMTP, backups and a
-go-live checklist. The short version:
+See **[DEPLOY.md](DEPLOY.md)** for a step-by-step guide (Neon/Render/Railway/VPS),
+environment variables, uploads storage, SMTP, backups and a go-live checklist.
+The short version for a Neon-backed deploy:
 
 ```bash
 npm ci --omit=dev
-cp .env.example .env    # set SESSION_SECRET, NODE_ENV=production, BASE_URL
+cp .env.example .env    # DATABASE_URL, SESSION_SECRET, NODE_ENV=production, BASE_URL
 npm run admin:create    # first staff account (no demo data)
-npm start               # health check: GET /healthz
+npm start               # schema is created on boot; health check: GET /healthz
 ```
+
+On SQLite instead, the steps are the same but you keep `DATABASE_URL` unset and
+mount a persistent disk for `db/` (needed on hosts with an ephemeral filesystem).
 
 ---
 
 ## Security notes
 
 Done: bcrypt password hashing (cost 10), httpOnly + SameSite session cookies,
-secure cookies in production, a SQLite-backed session store (logins survive
+secure cookies in production, a database-backed session store (logins survive
 restarts), parameterised queries everywhere, image-only uploads with a size cap
 and randomised filenames, role checks on every route, identical error text for
 wrong email and wrong password, trust-proxy support for HTTPS hosts.

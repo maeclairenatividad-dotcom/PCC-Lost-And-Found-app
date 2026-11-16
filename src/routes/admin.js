@@ -31,10 +31,10 @@ router.get('/', async (req, res, next) => {
     const [stats] = await q(`
       SELECT
         (SELECT COUNT(*) FROM items WHERE status='pending_dropoff') AS awaiting,
-        (SELECT COUNT(*) FROM items WHERE status='in_custody')      AS inCustody,
-        (SELECT COUNT(*) FROM claims WHERE status='pending')        AS pendingClaims,
+        (SELECT COUNT(*) FROM items WHERE status='in_custody')      AS "inCustody",
+        (SELECT COUNT(*) FROM claims WHERE status='pending')        AS "pendingClaims",
         (SELECT COUNT(*) FROM items WHERE status='returned')        AS returned,
-        (SELECT COUNT(*) FROM lost_reports WHERE status='open')     AS openLost,
+        (SELECT COUNT(*) FROM lost_reports WHERE status='open')     AS "openLost",
         (SELECT COUNT(*) FROM users WHERE role='student')           AS students`);
 
     const queue = await q(`
@@ -66,17 +66,23 @@ router.get('/', async (req, res, next) => {
       ORDER BY a.created_at DESC LIMIT 12`);
 
     // Returns per month, last 6 months, for the dashboard bar strip.
-    // strftime('%b') returns NULL on some platforms (Windows), so the short
-    // month label is produced here in JS from the numeric month.
+    // Grouped in JS so the query stays portable between SQLite and Postgres.
     const trendRows = await q(`
-      SELECT strftime('%Y-%m', released_at) AS ym,
-             CAST(strftime('%m', released_at) AS INTEGER) AS month, COUNT(*) AS n
+      SELECT released_at
       FROM items
       WHERE status='returned' AND released_at >= datetime('now','localtime','-6 months')
-      GROUP BY ym
-      ORDER BY ym`);
+      ORDER BY released_at`);
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const trend = trendRows.map((r) => ({ ...r, label: MONTHS[(r.month - 1) % 12] }));
+    const counts = new Map();
+    for (const row of trendRows) {
+      const d = new Date(row.released_at);
+      if (Number.isNaN(d.getTime())) continue;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      counts.set(ym, (counts.get(ym) || 0) + 1);
+    }
+    const trend = [...counts.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([ym, n]) => ({ ym, month: Number(ym.slice(5)), n, label: MONTHS[Number(ym.slice(5)) - 1] }));
 
     res.render('admin/dashboard', {
       title: 'Property office', stats, queue, dropoffs, stale, activity, trend, windowDays

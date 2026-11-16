@@ -6,8 +6,8 @@ const session = require('express-session');
 const flash = require('connect-flash');
 
 const helpers = require('./helpers');
-const { verify } = require('./db');
-const { SqliteSessionStore } = require('./session-store');
+const { verify, ensureSchema, close: closeDb, engine } = require('./db');
+const { SessionStore } = require('./session-store');
 
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/student');
@@ -37,7 +37,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-only-secret',
   resave: false,
   saveUninitialized: false,
-  store: new SqliteSessionStore({ ttlMs: 1000 * 60 * 60 * 8 }),
+  store: new SessionStore({ ttlMs: 1000 * 60 * 60 * 8 }),
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
@@ -71,7 +71,12 @@ app.use('/admin', adminRoutes);
 app.get('/healthz', async (req, res) => {
   try {
     await verify();
-    res.json({ ok: true, uptime: Math.round(process.uptime()), mail: await isMailEnabled() });
+    res.json({
+      ok: true,
+      engine,
+      uptime: Math.round(process.uptime()),
+      mail: await isMailEnabled()
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: 'database unavailable' });
   }
@@ -103,18 +108,20 @@ app.use((err, req, res, next) => {
 const PORT = Number(process.env.PORT || 3000);
 
 verify()
+  .then(() => ensureSchema())
   .then(async () => {
     const mailOn = await isMailEnabled();
     const server = app.listen(PORT, () => {
       console.log(`\n  Lost & Found running at http://localhost:${PORT}`);
+      console.log(`  Database:     ${engine}`);
       console.log(`  Email sending: ${mailOn ? 'ON (SMTP)' : 'OFF (logged to email_log)'}\n`);
     });
 
-    // Close cleanly on Ctrl+C or a host's SIGTERM so SQLite isn't left mid-write.
+    // Close cleanly on Ctrl+C or a host's SIGTERM so writes are not left hanging.
     const shutdown = (signal) => {
       console.log(`\n  ${signal} received, shutting down…`);
-      server.close(() => {
-        try { require('./db').db.close(); } catch (err) { /* already closed */ }
+      server.close(async () => {
+        await closeDb();
         process.exit(0);
       });
       setTimeout(() => process.exit(1), 8000).unref();
