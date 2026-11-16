@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Nothing private is listed here on purpose: every signed-in page redirects
+# anonymous visitors to /login, so a crawler cannot read it anyway. A Disallow
+# on /admin or /dashboard would only block the public login pages too.
+
+Sitemap: https://pcc-lost-and-found-app.onrender.com/sitemap.xml
