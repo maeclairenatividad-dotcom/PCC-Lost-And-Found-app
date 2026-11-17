@@ -121,6 +121,18 @@
         </form>
       </div>
     <% } %>
+
+    <div class="panel">
+      <h2>Delete record</h2>
+      <p class="small muted">Erases this item completely<% if (claims.length) { %>,
+         including <%= claims.length %> claim<%= claims.length === 1 ? '' : 's' %> and any proof photos<% } %>.
+         Use <strong>Remove from inventory</strong> instead if the item was handed out or
+         cleared normally — that keeps the history.</p>
+      <form method="POST" action="/admin/items/<%= item.id %>/delete"
+            onsubmit="return confirm('Delete <%= item.ref_code %><% if (claims.length) { %> and <%= claims.length %> claim<%= claims.length === 1 ? '' : 's' %><% } %> permanently? This cannot be undone.')">
+        <button class="btn danger" type="submit">Delete permanently</button>
+      </form>
+    </div>
   </div>
 
   <div>

@@ -48,7 +48,13 @@
               <td><%= i.finder %></td>
               <td class="muted"><%= i.storage_location || '—' %></td>
               <td><span class="pill <%= statusTone(i.status) %>"><%= statusLabel(i.status) %></span></td>
-              <td><a class="small" href="/admin/items/<%= i.id %>">Open</a></td>
+              <td class="nowrap">
+                <a class="small" href="/admin/items/<%= i.id %>">Open</a>
+                <form method="POST" action="/admin/items/<%= i.id %>/delete" class="inline-form"
+                      onsubmit="return confirm('Delete <%= i.ref_code %> permanently? Any claims and proof photos go with it.')">
+                  <button class="btn ghost small" type="submit">Delete</button>
+                </form>
+              </td>
             </tr>
           <% }); %>
         </tbody>

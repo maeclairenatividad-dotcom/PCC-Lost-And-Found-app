@@ -24,6 +24,18 @@ router.use(async (req, res, next) => {
 
 const categories = () => q('SELECT * FROM categories ORDER BY name');
 
+/**
+ * Remove stored images for a record. Uploaded photos live in the upload_files
+ * table and are addressed as /files/<id>, so deleting the table rows is what
+ * actually frees the bytes (the ephemeral disk never held them).
+ */
+async function deleteUploads(paths) {
+  for (const p of paths) {
+    const m = String(p || '').match(/^\/files\/(\d+)$/);
+    if (m) await run('DELETE FROM upload_files WHERE id = ?', [Number(m[1])]);
+  }
+}
+
 // =====================================================================
 // Overview
 // =====================================================================
@@ -217,6 +229,41 @@ router.post('/items/:id/dispose', async (req, res, next) => {
     await logActivity(req.session.user.id, 'item_disposed', 'item', item.id,
       String(req.body.reason || '').slice(0, 200));
     req.flash('success', `${item.ref_code} removed from inventory.`);
+    res.redirect('/admin/items');
+  } catch (err) { next(err); }
+});
+
+/**
+ * Delete an item for good, together with its claims and their proof photos.
+ * This is for duplicate or test records — ordinary clear-outs should use the
+ * soft "Remove from inventory" above so the audit trail survives.
+ */
+router.post('/items/:id/delete', async (req, res, next) => {
+  try {
+    const item = await one('SELECT * FROM items WHERE id = ?', [req.params.id]);
+    if (!item) {
+      req.flash('error', 'That item no longer exists.');
+      return res.redirect('/admin/items');
+    }
+
+    const claims = await q('SELECT id FROM claims WHERE item_id = ?', [item.id]);
+    const proofs = await q(`
+      SELECT p.file_path
+      FROM claim_proofs p JOIN claims cl ON cl.id = p.claim_id
+      WHERE cl.item_id = ?`, [item.id]);
+
+    // Both engines cascade, but deleting the children explicitly keeps this
+    // predictable and lets the audit line report how much was attached.
+    await run('DELETE FROM claim_proofs WHERE claim_id IN (SELECT id FROM claims WHERE item_id = ?)', [item.id]);
+    await run('DELETE FROM claims WHERE item_id = ?', [item.id]);
+    await run('DELETE FROM items WHERE id = ?', [item.id]);
+
+    await deleteUploads([item.photo_path].concat(proofs.map((p) => p.file_path)));
+    await logActivity(req.session.user.id, 'item_deleted', 'item', item.id,
+      `${item.ref_code}${claims.length ? ` (${claims.length} claim${claims.length === 1 ? '' : 's'})` : ''}`);
+
+    req.flash('success', `${item.ref_code} deleted`
+      + (claims.length ? ` with ${claims.length} claim${claims.length === 1 ? '' : 's'}.` : '.'));
     res.redirect('/admin/items');
   } catch (err) { next(err); }
 });
@@ -434,6 +481,25 @@ router.post('/lost-reports/:id/status', async (req, res, next) => {
     const label = status === 'resolved' ? 'marked as found'
       : status === 'closed' ? 'closed' : 'reopened';
     req.flash('success', `${report.ref_code} ${label}.`);
+    res.redirect('/admin/lost-reports');
+  } catch (err) { next(err); }
+});
+
+/** Delete a lost report outright. Used to clear duplicate or bogus reports. */
+router.post('/lost-reports/:id/delete', async (req, res, next) => {
+  try {
+    const report = await one(
+      'SELECT id, ref_code FROM lost_reports WHERE id = ?', [req.params.id]);
+    if (!report) {
+      req.flash('error', 'That lost report no longer exists.');
+      return res.redirect('/admin/lost-reports');
+    }
+
+    // No child rows point at lost_reports, so a plain delete is enough.
+    await run('DELETE FROM lost_reports WHERE id = ?', [report.id]);
+    await logActivity(req.session.user.id, 'lost_deleted', 'lost_report', report.id, report.ref_code);
+
+    req.flash('success', `${report.ref_code} deleted.`);
     res.redirect('/admin/lost-reports');
   } catch (err) { next(err); }
 });
