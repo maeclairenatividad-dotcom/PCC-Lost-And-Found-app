@@ -63,9 +63,14 @@
                  placeholder="Library 2nd floor, near the printers" value="<%= form.foundLocation || '' %>">
         </div>
         <div class="field mb0">
-          <label for="foundAt">Date and time found</label>
-          <input type="datetime-local" id="foundAt" name="foundAt" required
-                 value="<%= form.foundAt || dtLocalValue() %>">
+          <label for="foundAt">Date and time found <span class="muted small">(Asia/Manila)</span></label>
+          <div class="datetime-row">
+            <input type="datetime-local" id="foundAt" name="foundAt" required
+                   data-now data-tz="<%= APP_TIMEZONE %>"
+                   value="<%= form.foundAt || dtLocalValue() %>">
+            <button type="button" class="btn ghost small" data-now-button>Now</button>
+          </div>
+          <p class="hint">Defaults to now on the school clock. A future time is rejected.</p>
         </div>
       </div>
 
@@ -90,4 +95,5 @@
   </div>
 </form>
 
+<script src="/js/datetime-local.js?v=1"></script>
 <%- include('../partials/foot') %>

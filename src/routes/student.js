@@ -3,6 +3,7 @@ const { q, one, run, nextRefCode, logActivity } = require('../db');
 const { notify } = require('../mailer');
 const { requireLogin, requireStudent } = require('../middleware/auth');
 const { upload, saveUpload } = require('../middleware/upload');
+const { isFutureLocal } = require('../helpers');
 const badges = require('../badges');
 
 const router = express.Router();
@@ -110,7 +111,7 @@ router.post('/found/new', requireStudent, upload.single('photo'), async (req, re
         title: 'Log a found item', categories: await categories(), form
       });
     }
-    if (new Date(form.foundAt) > new Date()) {
+    if (isFutureLocal(form.foundAt)) {
       req.flash('error', 'The date found cannot be in the future.');
       return res.status(400).render('student/report-found', {
         title: 'Log a found item', categories: await categories(), form
@@ -191,6 +192,12 @@ router.post('/lost/new', requireStudent, upload.single('photo'), async (req, res
   try {
     if (!form.title || !form.description || !form.lostLocation || !form.lostAt) {
       req.flash('error', 'Fill in what you lost, and where and when you last had it.');
+      return res.status(400).render('student/report-lost', {
+        title: 'Report a lost item', categories: await categories(), form
+      });
+    }
+    if (isFutureLocal(form.lostAt)) {
+      req.flash('error', 'The date you lost it cannot be in the future.');
       return res.status(400).render('student/report-lost', {
         title: 'Report a lost item', categories: await categories(), form
       });

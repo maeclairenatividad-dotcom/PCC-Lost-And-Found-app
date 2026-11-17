@@ -58,9 +58,14 @@
                  placeholder="Canteen, table by the window" value="<%= form.lostLocation || '' %>">
         </div>
         <div class="field mb0">
-          <label for="lostAt">Date and time</label>
-          <input type="datetime-local" id="lostAt" name="lostAt" required
-                 value="<%= form.lostAt || dtLocalValue() %>">
+          <label for="lostAt">Date and time <span class="muted small">(Asia/Manila)</span></label>
+          <div class="datetime-row">
+            <input type="datetime-local" id="lostAt" name="lostAt" required
+                   data-now data-tz="<%= APP_TIMEZONE %>"
+                   value="<%= form.lostAt || dtLocalValue() %>">
+            <button type="button" class="btn ghost small" data-now-button>Now</button>
+          </div>
+          <p class="hint">When you last had it. Must not be in the future.</p>
         </div>
       </div>
 
@@ -72,4 +77,5 @@
   </div>
 </form>
 
+<script src="/js/datetime-local.js?v=1"></script>
 <%- include('../partials/foot') %>

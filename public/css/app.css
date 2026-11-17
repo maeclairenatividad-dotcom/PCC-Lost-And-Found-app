@@ -537,6 +537,16 @@ input:focus, select:focus, textarea:focus {
 }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
 
+/* Date/time input with its "Now" button. The input must be allowed to shrink
+   inside the flex row, otherwise iOS Safari lets it overflow the panel. */
+.datetime-row { display: flex; gap: .5rem; align-items: stretch; }
+.datetime-row input[type=datetime-local] { flex: 1 1 auto; min-width: 0; }
+.datetime-row .btn { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 400px) {
+  .datetime-row { flex-direction: column; }
+  .datetime-row .btn { align-self: flex-start; }
+}
+
 /* Inline checkbox rows (mail settings, consent toggles) */
 .check {
   display: inline-flex; align-items: center; gap: .5rem;

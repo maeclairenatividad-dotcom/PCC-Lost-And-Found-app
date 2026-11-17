@@ -27,6 +27,9 @@ const statusTone  = (s) => (STATUS[s] ? STATUS[s].tone : 'mute');
  */
 const TIMEZONE = process.env.PG_TIMEZONE || 'Asia/Manila';
 
+/* Shown next to the date fields, and passed to /js/datetime-local.js. */
+const APP_TIMEZONE = process.env.APP_TIMEZONE || TIMEZONE;
+
 const ZONE_PARTS = new Intl.DateTimeFormat('en-GB', {
   timeZone: TIMEZONE,
   year: 'numeric', month: '2-digit', day: '2-digit',
@@ -116,6 +119,18 @@ function dtLocalValue(d) {
   return `${x.getUTCFullYear()}-${pad(x.getUTCMonth() + 1)}-${pad(x.getUTCDate())}T${pad(x.getUTCHours())}:${pad(x.getUTCMinutes())}`;
 }
 
+/**
+ * True when a datetime-local value is later than "now" on the school clock.
+ * Comparing wall-clock values avoids the server's own timezone (Render runs
+ * UTC, 8 hours behind Manila). The grace window absorbs page-render delay and
+ * a phone clock that is a few minutes ahead.
+ */
+function isFutureLocal(value, graceMinutes = 15) {
+  const submitted = wallMs(value);
+  if (Number.isNaN(submitted)) return false;
+  return submitted > nowWallMs() + graceMinutes * 60000;
+}
+
 /** Days remaining in the claim window before an item is flagged for disposal. */
 function daysLeft(receivedAt) {
   if (!receivedAt) return null;
@@ -142,5 +157,5 @@ function sectionsFor() {
 
 module.exports = {
   STATUS, statusLabel, statusTone, fmtDate, fmtDateTime, timeAgo, dtLocalValue, daysLeft,
-  wallDate, wallNow, PROGRAMS, sectionsFor
+  wallDate, wallNow, APP_TIMEZONE, isFutureLocal, PROGRAMS, sectionsFor
 };
