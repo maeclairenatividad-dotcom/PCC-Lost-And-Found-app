@@ -9,7 +9,7 @@
            onerror="this.onerror=null;this.src='/img/avatar-placeholder.svg'"><% } %>
       <%= user.role === 'student'
             ? [user.program, user.section].filter(Boolean).join(' · ') || 'Student'
-            : 'Property office staff' %>
+            : 'Administrator' %>
       · Notifications go to <%= user.email %>.
       <% if (user.role === 'student') { %>Moved to a new section or changed your number? Update it below.<% } %>
     </p>

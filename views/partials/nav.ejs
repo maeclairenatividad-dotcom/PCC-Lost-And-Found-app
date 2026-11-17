@@ -42,7 +42,7 @@
              onerror="this.onerror=null;this.src='/img/avatar-placeholder.svg'"><% } %>
         <div>
           <span class="who"><%= currentUser.name %></span>
-          <span class="role"><%= currentUser.studentNo || 'Staff' %> · Edit profile</span>
+          <span class="role"><%= currentUser.role === 'admin' ? 'Administrator' : (currentUser.studentNo || 'Student') %> · Edit profile</span>
         </div>
       </a>
       <form method="POST" action="/logout">

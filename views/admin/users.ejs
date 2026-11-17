@@ -19,7 +19,7 @@
             <tr>
               <td><strong><%= u.full_name %></strong><br><span class="small muted"><%= u.email %></span></td>
               <td><%= u.student_no || '—' %></td>
-              <td><span class="pill <%= u.role === 'admin' ? 'done' : 'mute' %>"><%= u.role === 'admin' ? 'Staff' : 'Student' %></span></td>
+              <td><span class="pill <%= u.role === 'admin' ? 'done' : 'mute' %>"><%= u.role === 'admin' ? 'Administrator' : 'Student' %></span></td>
               <td><%= u.finds %></td>
               <td><%= u.claims %></td>
               <td><span class="pill <%= u.is_active ? 'good' : 'bad' %>"><%= u.is_active ? 'Active' : 'Disabled' %></span></td>
